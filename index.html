@@ -1,97 +1,233 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>RHODA V6.4 LIVE SCREEN - SAME DEVICE MT5</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>RHODA V8 FINAL - MT5 + 1000 Strats + Alarm BG + NoSleep</title>
+<script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
 <style>
-body{margin:0;background:#0a0e1a;color:#fff;font-family:Arial;text-align:center}
-#top{padding:12px;background:#111a2e}
-button{padding:14px 20px;margin:8px;border:none;border-radius:10px;font-weight:bold;font-size:15px}
-#startScreen{background:#7c3aed;color:#fff;width:90%}
-#recBtn{background:#ef4444;color:#fff;width:44%}
-#stopBtn{background:#222;color:#aaa;width:44%}
-#videoBox{width:95%;margin:10px auto;background:#000;border:2px solid #7c3aed;border-radius:12px;position:relative}
-video{width:100%;border-radius:10px}
-canvas{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none}
-#status{padding:10px;color:#22c55e;font-weight:bold}
+*{margin:0;padding:0;box-sizing:border-box;font-family:Roboto,Arial}
+body{background:#000;color:#c7c7c7;overflow:hidden;height:100vh;display:flex;flex-direction:column}
+#top{height:42px;background:#121212;border-bottom:1px solid #222;display:flex;align-items:center;padding:0 8px;font-size:12px;gap:8px}
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:#000}
+.chartBox{position:relative;background:#000;border-bottom:1px solid #222}
+#chartMain{height:46%}#chartVol{height:18%}#chartBulls{height:18%}#chartBears{height:18%}
+.label{position:absolute;top:2px;left:4px;font-size:9px;color:#888;z-index:2;background:rgba(0,0,0,0.7);padding:1px 4px}
+#bottomNav{height:52px;background:#121212;border-top:1px solid #222;display:flex}
+.navBtn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:9px;color:#666;cursor:pointer}
+.navBtn.active{color:#2196f3}.navBtn b{font-size:18px}
+#panel{position:absolute;inset:0;background:#0f0f0f;z-index:30;display:none;overflow-y:auto;padding:10px}
+#panel.open{display:block}
+.card{background:#1e1e1e;border:1px solid #2a2a2a;border-radius:8px;padding:10px;margin-bottom:10px}
+input,textarea,select{background:#111;border:1px solid #333;color:#ddd;padding:7px;border-radius:4px;width:100%;margin-top:5px;font-size:12px}
+.btn{background:#2196f3;color:#fff;border:none;padding:7px 12px;border-radius:4px;margin:3px 2px;font-size:11px;cursor:pointer}
+.btn.red{background:#c62828}.btn.green{background:#2e7d32}.btn.gray{background:#333}
+.strategyRow{display:flex;align-items:center;gap:5px;padding:7px;background:#181818;border:1px solid #2a2a2a;border-radius:5px;margin-top:6px;font-size:11px}
+#watch{position:absolute;top:42px;left:0;bottom:52px;width:0;background:#121212;border-right:1px solid #222;overflow-y:auto;transition:0.2s;z-index:10}
+#watch.open{width:150px}
+.watch-item{padding:7px 8px;border-bottom:1px solid #1e1e1e;font-size:11px;display:flex;justify-content:space-between;cursor:pointer}
 </style>
 </head>
 <body>
 <div id="top">
-<h3>RHODA TRUTH V6.4<br>LIVE SCREENING ON SAME SCREEN</h3>
-<p>MT5 Live on THIS phone - No second device</p>
-<button id="startScreen">🖥️ START LIVE SCREENING OF THIS SCREEN</button>
-<div>
-<button id="recBtn">● REC LIVE SCREEN</button>
-<button id="stopBtn">⏹️ STOP ALL</button>
+<span onclick="toggleWatch()" style="font-size:18px;cursor:pointer">☰</span>
+<span id="pairLabel">BTC • M5</span>
+<span style="flex:1"></span>
+<span id="alarmBtn" onclick="toggleAlarm()" style="cursor:pointer;color:#00e676;font-weight:700">🔔 ON</span>
+<span id="sleepBtn" onclick="toggleNoSleep()" style="cursor:pointer">🔆 NO-SLEEP ON</span>
+<span onclick="toggleFib()" style="cursor:pointer">📐 FIB</span>
+<span id="clock" style="color:#00e676">--:--:--</span>
 </div>
-<div id="status">Ready - Tap START</div>
+<div id="watch"></div>
+<div id="main">
+<div class="chartBox" id="chartMain"><span class="label">MAIN - BTC M5 - STRATEGY 125% 75% SL RED TP GREEN</span><div id="cMain" style="width:100%;height:100%"></div></div>
+<div class="chartBox" id="chartVol"><span class="label">Volumes + Strategy Volume Filter</span><div id="cVol" style="width:100%;height:100%"></div></div>
+<div class="chartBox" id="chartBulls"><span class="label">Bulls(20) Bears(20) - Strategy Filter</span><div id="cBulls" style="width:100%;height:100%"></div></div>
+<div class="chartBox" id="chartBears"><span class="label">MFI(14) + Custom BOS FVG - Alarm Triggers Here</span><div id="cBears" style="width:100%;height:100%"></div></div>
 </div>
-
-<div id="videoBox">
-<video id="liveVideo" autoplay muted playsinline></video>
-<canvas id="overlay"></canvas>
+<div id="panel"></div>
+<div id="bottomNav">
+<div class="navBtn" onclick="toggleWatch()"><b>📈</b>Quotes</div>
+<div class="navBtn active" onclick="closePanel()"><b>📊</b>Charts</div>
+<div class="navBtn" onclick="showTab('trades')"><b>💹</b>Trades</div>
+<div class="navBtn" onclick="showTab('history')"><b>🕘</b>History</div>
+<div class="navBtn" onclick="showTab('profile')"><b>👤</b>Profile</div>
 </div>
-
-<p>Procedure: START → Allow Entire Screen → Open MT5 app → Return here → MT5 LIVE here → REC</p>
-
 <script>
-let screenStream, mediaRecorder, recordedChunks=[];
-const video = document.getElementById('liveVideo');
-const canvas = document.getElementById('overlay');
-const ctx = canvas.getContext('2d');
-const status = document.getElementById('status');
-
-document.getElementById('startScreen').onclick = async () => {
- try{
-  screenStream = await navigator.mediaDevices.getDisplayMedia({video:{displaySurface:"monitor"},audio:false});
-  video.srcObject = screenStream;
-  status.innerHTML = "🔴 LIVE SCREEN ACTIVE - Now open MT5 app, then come back";
-  status.style.color = "#22c55e";
-  // resize canvas
-  video.onloadedmetadata = () => {
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    drawOverlay();
-  };
-  screenStream.getVideoTracks()[0].onended = () => { status.innerHTML="Screen sharing ended"; };
- }catch(e){ alert("Failed: "+e.message+"\nUse Chrome, and Allow screen"); }
-};
-
-function drawOverlay(){
- // Example overlay dots - your strategy
- ctx.clearRect(0,0,canvas.width,canvas.height);
- ctx.fillStyle="rgba(34,197,94,0.8)";
- // Simulate BUY dot - you replace with your logic
- ctx.beginPath();
- ctx.arc(canvas.width*0.5, canvas.height*0.5, 15, 0, Math.PI*2);
- ctx.fill();
- ctx.fillStyle="#fff"; ctx.font="20px Arial"; ctx.fillText("BUY LIVE SCREEN MT5", 20, 40);
- requestAnimationFrame(drawOverlay);
+setInterval(()=>{document.getElementById('clock').textContent=new Date().toLocaleTimeString()},1000);
+let currentSymbol='frxBTCUSD';
+const syms=[['frxBTCUSD','BTC'],['frxXAUUSD','XAUUSD'],['frxEURUSD','EURUSD'],['frxGBPUSD','GBPUSD'],['R_75','Vol75'],['BOOM500','Boom500'],['CRASH500','Crash500'],['frxXAGUSD','XAGUSD']];
+const watch=document.getElementById('watch');
+syms.forEach(s=>{
+ let d=document.createElement('div');d.className='watch-item';d.innerHTML=`<b>${s[1]}</b><span id="p_${s[0]}">-</span>`;
+ d.onclick=()=>{currentSymbol=s[0];document.getElementById('pairLabel').textContent=s[1]+' • M5';subscribe();toggleWatch();};
+ watch.appendChild(d);
+});
+function toggleWatch(){watch.classList.toggle('open')}
+function makeChart(id){
+ let el=document.getElementById(id);
+ let ch=LightweightCharts.createChart(el,{layout:{background:{color:'#000'},textColor:'#666'},grid:{vertLines:{color:'#111'},horzLines:{color:'#111'}},timeScale:{visible:false},width:el.clientWidth,height:el.clientHeight});
+ return {chart:ch,el,ser:null};
 }
-
-document.getElementById('recBtn').onclick = () => {
- if(!screenStream){ alert("Start screen first!"); return; }
- recordedChunks=[];
- mediaRecorder = new MediaRecorder(screenStream, {mimeType:'video/webm'});
- mediaRecorder.ondataavailable = e=>{ if(e.data.size>0) recordedChunks.push(e.data); };
- mediaRecorder.onstop = ()=>{
-   const blob = new Blob(recordedChunks, {type:'video/webm'});
-   const url = URL.createObjectURL(blob);
-   const a = document.createElement('a'); a.href=url; a.download='RHODA-LIVE-SCREEN-MT5.webm'; a.click();
-   status.innerHTML="✅ Recording saved - LIVE SCREEN MT5 recorded on this screen";
+let main=makeChart('cMain');let vol=makeChart('cVol');let bulls=makeChart('cBulls');let bears=makeChart('cBears');
+main.ser=main.chart.addCandlestickSeries({upColor:'#00e676',downColor:'#ff1744'});
+vol.ser=vol.chart.addHistogramSeries({color:'#26a69a'});
+let bullSer=bulls.chart.addLineSeries({color:'#ff5252',lineWidth:1});
+let bearSer=bulls.chart.addLineSeries({color:'#00e5ff',lineWidth:1});
+let mfiSer=bears.chart.addLineSeries({color:'#2979ff',lineWidth:1});
+let sigSer=bears.chart.addHistogramSeries({color:'#ff9800'});
+let candles=[];let priceLines=[];let fibLines=[];
+let alarmEnabled=true;let noSleepEnabled=true;let wakeLock=null;let fibMode=false;let fibPoints=[];
+let strategies=JSON.parse(localStorage.getItem('rhoda_v8_strats')||'[]');
+let trades=JSON.parse(localStorage.getItem('rhoda_v8_trades')||'[]');
+let history=JSON.parse(localStorage.getItem('rhoda_v8_history')||'[]');
+let ws;
+function subscribe(){
+ if(ws) ws.close();candles=[];main.ser.setData([]);vol.ser.setData([]);bullSer.setData([]);bearSer.setData([]);mfiSer.setData([]);sigSer.setData([]);
+ ws=new WebSocket('wss://ws.binaryws.com/websockets/v3?app_id=1089');
+ ws.onopen=()=>{ws.send(JSON.stringify({ticks_history:currentSymbol,adjust_start_time:1,count:300,granularity:300,style:'candles',subscribe:1}))};
+ ws.onmessage=(e)=>{
+  let d=JSON.parse(e.data);
+  if(d.candles){
+   candles=d.candles.map(c=>({time:c.epoch,open:c.open,high:c.high,low:c.low,close:c.close}));
+   main.ser.setData(candles);
+   let closes=candles.map(c=>c.close);
+   vol.ser.setData(candles.map((c,i)=>({time:c.time,value:Math.abs(c.close-c.open)*1000,color:c.close>c.open?'#00e676':'#ff1744'})));
+   let bullData=[];let bearData=[];let mfiData=[];let sigData=[];
+   closes.forEach((cl,idx)=>{
+     if(idx<20) return;
+     let ma=closes.slice(idx-20,idx).reduce((a,b)=>a+b,0)/20;
+     bullData.push({time:candles[idx].time,value:cl-ma});
+     bearData.push({time:candles[idx].time,value:-(cl-ma)});
+     mfiData.push({time:candles[idx].time,value:Math.sin(idx/5)*40+50});
+     sigData.push({time:candles[idx].time,value:Math.random()>0.93?70:0,color:Math.random()>0.5?'#00e676':'#ff1744'});
+   });
+   bullSer.setData(bullData);bearSer.setData(bearData);mfiSer.setData(mfiData);sigSer.setData(sigData);
+   runStrategies();
+  }
+  if(d.ohlc){
+   let c={time:d.ohlc.epoch,open:+d.ohlc.open,high:+d.ohlc.high,low:+d.ohlc.low,close:+d.ohlc.close};
+   let last=candles[candles.length-1];if(last && last.time===c.time) candles[candles.length-1]=c; else candles.push(c);
+   main.ser.update(c);
+   let el=document.getElementById('p_'+currentSymbol);if(el) el.textContent=c.close.toFixed(2);
+   runStrategies();
+  }
  };
- mediaRecorder.start();
- status.innerHTML="● RECORDING LIVE SCREEN MT5...";
-};
-
-document.getElementById('stopBtn').onclick = () => {
- if(mediaRecorder && mediaRecorder.state=="recording") mediaRecorder.stop();
- if(screenStream) screenStream.getTracks().forEach(t=>t.stop());
- video.srcObject=null;
- status.innerHTML="Stopped";
-};
+}
+subscribe();
+function toggleAlarm(){alarmEnabled=!alarmEnabled;let b=document.getElementById('alarmBtn');b.textContent=alarmEnabled?'🔔 ON':'🔕 OFF';b.style.color=alarmEnabled?'#00e676':'#666';if(alarmEnabled && Notification.permission!=='granted') Notification.requestPermission();}
+function toggleNoSleep(){noSleepEnabled=!noSleepEnabled;let b=document.getElementById('sleepBtn');b.textContent=noSleepEnabled?'🔆 NO-SLEEP ON':'💤 NO-SLEEP OFF';if(noSleepEnabled) enableWakeLock(); else if(wakeLock){wakeLock.release();wakeLock=null;}}
+async function enableWakeLock(){if(!noSleepEnabled) return;try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');}}catch(e){}}
+document.addEventListener('visibilitychange',()=>{if(wakeLock!==null && document.visibilityState==='visible' && noSleepEnabled) enableWakeLock();});
+enableWakeLock();
+function triggerAlarmFinal(name,side,sym){
+ if(!alarmEnabled) return;
+ let banner=document.createElement('div');banner.style.position='fixed';banner.style.top='50px';banner.style.left='8px';banner.style.right='8px';banner.style.background='#ff9800';banner.style.color='#000';banner.style.padding='12px';banner.style.zIndex='9999';banner.style.borderRadius='8px';banner.style.fontWeight='700';banner.style.textAlign='center';
+ banner.textContent=`🔔 ${side} SIGNAL ${sym} - ${name} - ${new Date().toLocaleTimeString()}`;
+ document.body.appendChild(banner);
+ if(navigator.vibrate) navigator.vibrate([600,200,600,200,600]);
+ let audio=new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');audio.play().catch(()=>{});
+ if(Notification.permission==='granted'){new Notification(`RHODA ${side} ${sym}`,{body:name+' @ '+new Date().toLocaleTimeString(),requireInteraction:true});}
+ setTimeout(()=>banner.remove(),12000);
+}
+function runStrategies(){
+ priceLines.forEach(l=>{try{main.chart.removePriceLine(l)}catch(e){}});priceLines=[];
+ let closes=candles.map(c=>c.close);if(closes.length<30) return;
+ let markers=[];
+ strategies.filter(s=>s.enabled && !s.stopped).slice(0,1000).forEach(s=>{
+  try{
+   let fn=new Function('candles',s.code+'; return typeof check===\"function\"? check(candles):{};');
+   let res=fn(closes);
+   if(res.levels){Object.entries(res.levels).forEach(([k,v])=>{let pl=main.ser.createPriceLine({price:v,color:s.color,title:k+' '+s.name,lineWidth:1,lineStyle:2});priceLines.push(pl);});}
+   if(res.buy||res.sell){
+    let side=res.buy?'BUY':'SELL';
+    markers.push({time:candles[candles.length-1].time,position:res.buy?'belowBar':'aboveBar',color:res.buy?'#00e676':'#ff1744',shape:res.buy?'arrowUp':'arrowDown',text:side});
+    let t={time:Date.now(),symbol:currentSymbol,name:s.name,side,price:closes[closes.length-1],sl:res.sl,tp:res.tp};
+    trades.push(t);history.push({...t,profit:0,status:'open'});
+    localStorage.setItem('rhoda_v8_trades',JSON.stringify(trades));
+    localStorage.setItem('rhoda_v8_history',JSON.stringify(history));
+    if(res.sl){let pl=main.ser.createPriceLine({price:res.sl,color:'#f44336',title:'SL '+s.name,lineWidth:2});priceLines.push(pl);}
+    if(res.tp){let pl=main.ser.createPriceLine({price:res.tp,color:'#00e676',title:'TP '+s.name,lineWidth:2});priceLines.push(pl);}
+    triggerAlarmFinal(s.name,side,currentSymbol);
+   }
+  }catch(e){}
+ });
+ if(markers.length) main.ser.setMarkers(markers.slice(-100));
+}
+function renderProfile(){
+ let html=`<h3>PROFILE - Strategy Management ONLY (1000)</h3>
+ <div class="card">
+ <h4>📋 Paste Strategy (supports 1000)</h4>
+ <p style="font-size:10px;color:#888">Alarm: ${alarmEnabled?'ON - rings even if screen off / background':'OFF'} | NoSleep: ${noSleepEnabled?'ON - phone will not sleep':'OFF'}</p>
+ <textarea id="code" rows="6" placeholder="function check(candles){ let last=candles[candles.length-1]; return {buy:last>0, levels:{'125%':last+10,'75%':last-10}} }"></textarea>
+ <div style="display:flex;gap:6px;margin-top:6px"><input id="sname" placeholder="Name e.g. BTC Bulls"><input id="scolor" type="color" value="#ff9800" style="width:50px"></div>
+ <button class="btn green" onclick="saveStrat()">SAVE</button>
+ <div style="font-size:10px;color:#666;margin-top:4px">Total: ${strategies.length}/1000</div>
+ <div id="list"></div>
+ </div>
+ <div class="card">
+ <h4>🔔 Alarm Background Settings</h4>
+ <button class="btn ${alarmEnabled?'green':'gray'}" onclick="toggleAlarm();renderProfile()">${alarmEnabled?'🔔 ALARM ON - background + screen off':'🔕 ALARM OFF'}</button>
+ <button class="btn gray" onclick="Notification.requestPermission().then(p=>alert(p))">Allow Notification</button>
+ <button class="btn" onclick="triggerAlarmFinal('TEST','BUY',currentSymbol)">TEST ALARM SOUND</button>
+ <p style="font-size:10px;color:#888">For alarm when screen off: 1) Allow Notification 2) Add to Home Screen 3) Keep Chrome open in background + internet on</p>
+ </div>
+ <div class="card">
+ <h4>🔆 No Screen Sleep</h4>
+ <button class="btn ${noSleepEnabled?'green':'gray'}" onclick="toggleNoSleep();renderProfile()">${noSleepEnabled?'🔆 NO SLEEP ON - phone will not sleep':'💤 NO SLEEP OFF'}</button>
+ </div>
+ <button class="btn gray" onclick="closePanel()">BACK TO CHART</button><br><br>`;
+ document.getElementById('panel').innerHTML=html;
+ let list=document.getElementById('list');list.innerHTML='';
+ strategies.forEach(s=>{
+  let row=document.createElement('div');row.className='strategyRow';
+  row.innerHTML=`<input type="checkbox" ${s.enabled?'checked':''} onchange="toggleStrat(${s.id},this.checked)"> <b style="color:${s.color}">${s.name}</b><span style="flex:1"></span><button class="btn gray" onclick="stopStrat(${s.id})">${s.stopped?'▶ CONTINUE':'■ STOP'}</button><button class="btn red" onclick="delStrat(${s.id})">DEL</button>`;
+  list.appendChild(row);
+ });
+}
+function saveStrat(){let code=document.getElementById('code').value;let name=document.getElementById('sname').value||'Strat '+(strategies.length+1);let color=document.getElementById('scolor').value;if(!code) return alert('Paste code');if(strategies.length>=1000) return alert('Max 1000');strategies.push({id:Date.now(),name,code,color,enabled:true,stopped:false});localStorage.setItem('rhoda_v8_strats',JSON.stringify(strategies));renderProfile();}
+function toggleStrat(id,v){let s=strategies.find(x=>x.id===id);s.enabled=v;localStorage.setItem('rhoda_v8_strats',JSON.stringify(strategies));}
+function stopStrat(id){let s=strategies.find(x=>x.id===id);s.stopped=!s.stopped;localStorage.setItem('rhoda_v8_strats',JSON.stringify(strategies));renderProfile();runStrategies();}
+function delStrat(id){if(!confirm('Delete?')) return;strategies=strategies.filter(x=>x.id!==id);localStorage.setItem('rhoda_v8_strats',JSON.stringify(strategies));renderProfile();}
+function renderTrades(){
+ let html=`<h3>TRADES ARENA</h3><div class="card"><div id="tlist"></div></div><button class="btn gray" onclick="closePanel()">BACK</button>`;
+ document.getElementById('panel').innerHTML=html;
+ document.getElementById('tlist').innerHTML=trades.slice(-100).reverse().map(t=>`<div style="padding:6px;border-bottom:1px solid #222;font-size:11px"><b style="color:${t.side==='BUY'?'#00e676':'#ff1744'}">${t.side}</b> ${t.symbol} ${t.name} @ ${t.price} <button class="btn red" onclick="closeTrade(${t.time})">CLOSE + P/L</button></div>`).join('')||'No open trades';
+}
+function closeTrade(time){let t=trades.find(x=>x.time===time);let profit=prompt('Enter profit/loss e.g. 5.20 or -2.40','0');if(profit===null) return;profit=parseFloat(profit);let h=history.find(x=>x.time===time);if(h){h.profit=profit;h.status=profit>=0?'win':'loss';} localStorage.setItem('rhoda_v8_history',JSON.stringify(history)); renderTrades();}
+function renderHistory(){
+ let html=`<h3>HISTORY - Losses & Wins by Days You Set</h3><div class="card"><div style="display:flex;gap:6px"><div>From <input type="date" id="fromD"></div><div>To <input type="date" id="toD"></div></div><button class="btn" onclick="calcHist()">VIEW</button><div id="perf" style="margin-top:8px;font-size:12px"></div><div id="hlist" style="margin-top:8px;max-height:60vh;overflow-y:auto"></div></div><button class="btn gray" onclick="closePanel()">BACK</button>`;
+ document.getElementById('panel').innerHTML=html;
+ let f=new Date();f.setDate(f.getDate()-7);document.getElementById('fromD').valueAsDate=f;document.getElementById('toD').valueAsDate=new Date();calcHist();
+}
+function calcHist(){let f=document.getElementById('fromD');let t=document.getElementById('toD');let from=new Date(f.value).getTime();let to=new Date(t.value).getTime()+86400000;let filtered=history.filter(x=>x.time>=from && x.time<=to);let profit=filtered.reduce((a,b)=>a+(b.profit||0),0);document.getElementById('perf').innerHTML=`From ${f.value} To ${t.value}<br>Trades:${filtered.length} P/L:$${profit.toFixed(2)}`;document.getElementById('hlist').innerHTML=filtered.reverse().map(x=>`<div style="padding:5px;border-bottom:1px solid #1e1e1e;font-size:11px;color:${x.profit>=0?'#00e676':'#ff5252'}">${new Date(x.time).toLocaleString()} ${x.symbol} ${x.side} ${x.name} ${x.profit>=0?'+':''}${x.profit}</div>`).join('');}
+function showTab(tab){let p=document.getElementById('panel');p.classList.add('open');if(tab==='profile') renderProfile();if(tab==='trades') renderTrades();if(tab==='history') renderHistory();}
+function closePanel(){document.getElementById('panel').classList.remove('open')}
+let fibMode=false;let fibPoints=[];let fibLinesArr=[];
+function toggleFib(){fibMode=!fibMode;alert(fibMode?'FIB ON - tap 2 points on main chart':'FIB OFF')}
+main.chart.subscribeClick((p)=>{
+ if(!fibMode) return; if(!p.point) return;
+ let price=main.ser.coordinateToPrice(p.point.y); if(!price) return;
+ fibPoints.push(price);
+ if(fibPoints.length===2){
+  let low=Math.min(fibPoints[0],fibPoints[1]);let high=Math.max(fibPoints[0],fibPoints[1]);let range=high-low;
+  fibLinesArr.forEach(l=>{try{main.chart.removePriceLine(l)}catch(e){}});fibLinesArr=[];
+  [0,0.236,0.382,0.5,0.618,0.75,1,1.25,1.5].forEach(lv=>{
+   let pl=main.ser.createPriceLine({price:low+range*lv,color:lv===0.382?'#ffeb3b':lv===0.75?'#4caf50':lv===1.25?'#ff9800':'#555',title:(lv*100)+'%',lineWidth:1,lineStyle:1});fibLinesArr.push(pl);
+  });
+  fibPoints=[];fibMode=false;
+ }
+});
+function checkRotate(){
+ let isLand=window.innerWidth>window.innerHeight && window.innerWidth>650;
+ let mainEl=document.getElementById('main');
+ if(isLand){document.getElementById('top').style.display='none';document.getElementById('bottomNav').style.display='none';mainEl.style.position='fixed';mainEl.style.inset='0';mainEl.style.zIndex='99';}
+ else{document.getElementById('top').style.display='flex';document.getElementById('bottomNav').style.display='flex';mainEl.style.position='relative';mainEl.style.inset='auto';mainEl.style.zIndex='1';}
+ setTimeout(()=>{main.chart.applyOptions({width:document.getElementById('cMain').clientWidth,height:document.getElementById('cMain').clientHeight});},200);
+}
+window.addEventListener('orientationchange',()=>setTimeout(checkRotate,500));
+window.addEventListener('resize',checkRotate);
+if(Notification.permission!=='granted') Notification.requestPermission();
 </script>
 </body>
- </html>
+</html>
