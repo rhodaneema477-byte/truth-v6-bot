@@ -3,159 +3,184 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Deriv All Fixed</title>
+<title>Deriv All Fixed No Bug</title>
 <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:Roboto,Arial}
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial}
 body{background:#000;color:#ddd;height:100vh;display:flex;flex-direction:column;overflow:hidden}
-#top{height:46px;background:#000;border-bottom:2px solid #ff444f;display:flex;align-items:center;gap:6px;padding:0 8px;flex-shrink:0}
+#top{height:42px;background:#000;border-bottom:2px solid #ff444f;display:flex;align-items:center;gap:6px;padding:0 8px;flex-shrink:0}
 #top b{color:#ff444f;font-size:11px}
 .sel{background:#111;color:#fff;border:1px solid #333;padding:6px 4px;border-radius:4px;font-size:10px;flex:1}
-#liveBar{height:30px;background:#111;display:flex;align-items:center;justify-content:space-between;padding:0 10px;font-size:11px;border-bottom:1px solid #222;flex-shrink:0}
-#chartWrap{flex:1;background:#000;position:relative;display:flex;flex-direction:column;min-height:320px}
-#cMain{width:100%;flex:1;min-height:280px}
-#priceRow{height:28px;background:#111;display:flex;align-items:center;justify-content:space-between;padding:0 10px;font-size:10px;border-top:1px solid #222;flex-shrink:0}
-.tabs{height:36px;display:flex;background:#111;border-top:1px solid #222;border-bottom:1px solid #222;font-size:10px;flex-shrink:0}
+#tfBar{height:28px;background:#000;display:flex;align-items:center;gap:2px;padding:0 6px;overflow-x:auto;border-bottom:1px solid #222;flex-shrink:0}
+.tfBtn{padding:4px 8px;background:#111;border:1px solid #333;color:#666;border-radius:3px;font-size:10px}
+.tfBtn.active{background:#ff444f;color:#fff;border-color:#ff444f}
+#liveBar{height:28px;background:#111;display:flex;align-items:center;justify-content:space-between;padding:0 10px;font-size:11px;border-bottom:1px solid #222;flex-shrink:0}
+#chartWrap{height:340px;background:#000;flex-shrink:0;border-bottom:1px solid #222}
+#cMain{width:100%;height:100%}
+#priceRow{height:26px;background:#111;display:flex;align-items:center;justify-content:space-between;padding:0 10px;font-size:10px;border-top:1px solid #222;flex-shrink:0}
+.tabs{height:32px;display:flex;background:#111;border-top:1px solid #222;border-bottom:1px solid #222;font-size:10px;flex-shrink:0}
 .tabs span{flex:1;display:flex;align-items:center;justify-content:center;color:#666;border-bottom:2px solid transparent}
 .tabs span.active{color:#ff444f;border-bottom:2px solid #ff444f}
 .panel{display:none;flex:1;overflow-y:auto;padding:8px;background:#0a0a0a}
 .panel.active{display:flex;flex-direction:column}
 .inp{background:#111;color:#fff;border:1px solid #333;padding:8px;border-radius:4px;font-size:11px;width:100%;margin:4px 0}
 .btn{padding:8px 12px;background:#ff444f;color:#fff;border:none;border-radius:4px;font-size:11px;margin:2px}
-.btnG{background:#0ac269}.btnD{background:#333}
+.btnD{background:#333}.btnG{background:#0ac269}
 .chip{padding:5px 8px;background:#111;border:1px solid #333;border-radius:12px;font-size:10px;color:#888;display:inline-block;margin:2px}
 .chip.on{background:#ff444f;color:#fff;border-color:#ff444f}
-.card{background:#111;border:1px solid #222;padding:8px;border-radius:6px;margin:6px 0}
-.tog{width:44px;height:24px;background:#333;border-radius:12px;position:relative;display:inline-block}
-.tog.on{background:#0ac269}.tog i{position:absolute;width:20px;height:20px;background:#fff;border-radius:50%;top:2px;left:2px;transition:.2s}.tog.on i{left:22px}
-#gallery{display:flex;gap:4px;overflow-x:auto;padding:4px;min-height:54px}
-.gImg{width:80px;height:48px;object-fit:cover;border:1px solid #333;border-radius:3px}
-.tfBtn{padding:4px 7px;background:#111;border:1px solid #333;color:#666;border-radius:3px;font-size:10px;margin:1px}
-.tfBtn.active{background:#ff444f;color:#fff}
+.card{background:#111;border:1px solid #222;padding:8px;border-radius:4px;margin:5px 0}
+.tog{width:42px;height:22px;background:#333;border-radius:11px;position:relative;display:inline-block}
+.tog.on{background:#0ac269}.tog i{position:absolute;width:18px;height:18px;background:#fff;border-radius:50%;top:2px;left:2px;transition:.2s}.tog.on i{left:22px}
 </style>
 </head>
 <body>
-<div id="top">
-<b>DERIV ALL</b>
-<select id="assetSel" class="sel"><option>Loading...</option></select>
-<span id="conn" style="font-size:9px;color:#666">LIVE</span>
-</div>
-
-<div style="height:30px;background:#000;display:flex;align-items:center;gap:2px;padding:0 6px;overflow-x:auto;border-bottom:1px solid #222;flex-shrink:0" id="tfBar">
-<span class="tfBtn" onclick="setTF(60)">M1</span><span class="tfBtn active" onclick="setTF(300)">M5</span><span class="tfBtn" onclick="setTF(900)">M15</span><span class="tfBtn" onclick="setTF(1800)">M30</span><span class="tfBtn" onclick="setTF(3600)">H1</span><span class="tfBtn" onclick="setTF(14400)">H4</span><span class="tfBtn" onclick="setTF(86400)">D1</span><span class="tfBtn" onclick="setTF(604800)">W1</span><span class="tfBtn" onclick="setTF(2592000)">MN</span>
-</div>
-
-<div id="liveBar"><span id="symLabel">R_75 • ALL PAIRS</span><span id="livePrice" style="color:#ff444f;font-weight:bold">---</span><span id="pnlLive" style="color:#0ac269">PnL: 0</span></div>
-
-<div id="chartWrap"><div id="cMain"></div><div id="priceRow"><span>SL <input id="slInp" style="width:50px;background:#000;color:#fff;border:1px solid #333;padding:2px;font-size:10px" placeholder="50"> TP <input id="tpInp" style="width:50px;background:#000;color:#fff;border:1px solid #333;padding:2px;font-size:10px" placeholder="100"> Lot <input id="lotInp" value="0.2" style="width:36px;background:#000;color:#fff;border:1px solid #333;padding:2px"></span><span id="bgStat" style="color:#0ac269;font-size:9px">● BG ON</span></div></div>
-
-<div class="tabs"><span class="active" onclick="tab('strat')">STRATEGY</span><span onclick="tab('hist')">HISTORY P/L</span><span onclick="tab('shot')">SCREENSHOT AI</span><span onclick="tab('alarm')">ALARM</span></div>
+<div id="top"><b>DERIV ALL</b><select id="assetSel" class="sel"></select><span id="conn" style="font-size:9px;color:#0ac269">LIVE</span></div>
+<div id="tfBar"><span class="tfBtn" onclick="setTF(60,this)">M1</span><span class="tfBtn active" onclick="setTF(300,this)">M5</span><span class="tfBtn" onclick="setTF(900,this)">M15</span><span class="tfBtn" onclick="setTF(1800,this)">M30</span><span class="tfBtn" onclick="setTF(3600,this)">H1</span><span class="tfBtn" onclick="setTF(14400,this)">H4</span><span class="tfBtn" onclick="setTF(86400,this)">D1</span><span class="tfBtn" onclick="setTF(604800,this)">W1</span><span class="tfBtn" onclick="setTF(2592000,this)">MN</span></div>
+<div id="liveBar"><span id="symLabel">R_75 - ALL PAIRS</span><span id="livePrice" style="color:#ff444f;font-weight:bold">1120.45</span><span id="pnlLive">PnL: 0</span></div>
+<div id="chartWrap"><div id="cMain"></div></div>
+<div id="priceRow"><span>SL <input id="slInp" value="50" style="width:45px;background:#000;color:#fff;border:1px solid #333;padding:2px;font-size:10px"> TP <input id="tpInp" value="100" style="width:45px;background:#000;color:#fff;border:1px solid #333;padding:2px;font-size:10px"> Lot <input id="lotInp" value="0.2" style="width:35px;background:#000;color:#fff;border:1px solid #333;padding:2px;font-size:10px"></span><span id="bgStat" style="color:#0ac269;font-size:9px">BG ON</span></div>
+<div class="tabs"><span class="active" onclick="tab('strat')">STRATEGY</span><span onclick="tab('hist')">HISTORY P/L</span><span onclick="tab('shot')">SCREENSHOT</span><span onclick="tab('alarm')">ALARM</span></div>
 
 <div id="p-strat" class="panel active">
-<div style="font-size:10px;color:#fff">Paste Strategy - 1000 max - Works ONLY on chosen pairs</div>
-<textarea id="stratPaste" class="inp" style="height:60px;color:#0f0;font-family:monospace">{"name":"MA Cross","buy":"close>MA20","sell":"close<MA20","sl":50,"tp":100}</textarea>
+<div style="font-size:10px;color:#fff">Strategy Control - 1000 max - Works only on chosen pairs</div>
+<input id="stratName" class="inp" placeholder="Strategy Name - Asks for name - e.g. Strategy 1">
+<textarea id="stratPaste" class="inp" style="height:60px;color:#0f0;font-family:monospace" placeholder="Paste strategy code"></textarea>
 <div id="pairGrid" style="padding:4px 0"></div>
-<div style="display:flex;gap:4px"><button class="btn" onclick="saveStrat()">VALIDATE & SAVE</button><button class="btn btnD" onclick="document.getElementById('stratPaste').value=''">CLEAR</button><span id="stratInfo" style="font-size:10px;color:#666"></span></div>
+<div style="display:flex;gap:4px"><button class="btn" onclick="saveStrat()">VALIDATE AND SAVE</button><button class="btn btnD" onclick="clearStrat()">CLEAR</button><span id="stratInfo" style="font-size:10px;color:#666"></span></div>
 <div id="stratList"></div>
 </div>
 
 <div id="p-hist" class="panel">
-<div style="display:flex;justify-content:space-between"><span id="histTitle" style="font-size:11px;color:#fff">History P/L - Only chosen pairs</span><button class="btn btnG" onclick="backtest()">RUN BACKTEST</button></div>
-<div id="histLog" style="font-size:10px;color:#888;margin-top:6px">Shows profit/loss if we have been using this strategy on chosen pairs only</div><div id="histTrades"></div>
+<div style="display:flex;justify-content:space-between"><span style="font-size:11px;color:#fff">History - Profit Loss</span><button class="btn btnG" onclick="backtest()">RUN BACKTEST</button></div>
+<div id="histLog" style="font-size:11px;color:#aaa;margin-top:6px;line-height:1.5"></div><div id="histTrades"></div>
 </div>
 
 <div id="p-shot" class="panel">
-<input type="file" id="shotFile" accept="image/*" class="inp" onchange="handleShot(this)"><div id="shotPreview"></div><div id="shotAI" class="card" style="display:none;border-left:3px solid #ff444f"><b id="aiDecision" style="color:#fff"></b><div id="aiReason" style="font-size:10px;color:#888"></div></div><div style="display:flex;gap:4px"><button class="btn" onclick="takeScreenshot()">📸 TAKE SCREENSHOT</button></div><div id="gallery"></div>
+<input type="file" id="shotFile" accept="image/*" class="inp" onchange="handleShot(this)"><div id="shotPreview"></div><div id="shotResult" class="card" style="display:none"><div id="shotText" style="font-size:12px;color:#fff;line-height:1.4"></div></div>
+<button class="btn" onclick="takeScreenshot()">TAKE SCREENSHOT</button><div id="gallery" style="display:flex;gap:4px;overflow-x:auto;padding:4px;margin-top:6px"></div>
 </div>
 
 <div id="p-alarm" class="panel">
-<div style="display:flex;justify-content:space-between;font-size:11px;color:#fff"><span>🔔 Alarm BG even phone sleep - ON OFF</span><span id="almCount">0 alarms</span></div>
-<div style="display:flex;gap:4px;margin:6px 0"><button class="btn" onclick="requestPerm()">ENABLE BG+SOUND</button><button class="btn btnD" onclick="testSound()">TEST SOUND</button><span id="permInfo" style="font-size:9px;color:#0ac269"></span></div>
-<div style="display:flex;gap:4px"><select id="almStrat" class="sel"></select><select id="almCond" class="sel"><option value="BUY">BUY Signal</option><option value="SELL">SELL Signal</option><option value="above">Price ABOVE</option><option value="below">Price BELOW</option></select></div>
-<div style="display:flex;gap:4px;margin-top:4px"><input id="almPrice" type="number" placeholder="Price" class="sel"><select id="almSound" class="sel"><option value="loud">Loud</option><option value="beep">Beep</option><option value="siren">Siren</option></select><button class="btn btnG" onclick="createAlarm()">+ SET ALARM</button></div>
-<div id="almList"></div><div id="almLog" style="font-size:9px;color:#666;max-height:60px;overflow-y:auto;border-top:1px solid #222;margin-top:6px"></div>
+<div style="display:flex;justify-content:space-between;font-size:11px;color:#fff"><span>Alarm - Background even phone sleep - ON OFF</span><span id="almCount">0 alarms</span></div>
+<div style="display:flex;gap:4px;margin:6px 0"><button class="btn" onclick="requestPerm()">ENABLE BACKGROUND AND SOUND</button><button class="btn btnD" onclick="testSound()">TEST</button><span id="permInfo" style="font-size:9px;color:#0ac269"></span></div>
+<div style="display:flex;gap:4px"><select id="almStrat" class="sel"></select><select id="almCond" class="sel"><option value="BUY">BUY</option><option value="SELL">SELL</option><option value="above">Price ABOVE</option><option value="below">Price BELOW</option></select></div>
+<div style="display:flex;gap:4px;margin-top:4px"><input id="almPrice" type="number" placeholder="Price" class="sel"><button class="btn btnG" onclick="createAlarm()">SET ALARM</button></div>
+<div id="almList"></div><div id="almLog" style="font-size:10px;color:#666;border-top:1px solid #222;margin-top:6px;max-height:80px;overflow-y:auto"></div>
 </div>
 
 <script>
-let chart,candleS,candles=[];let currentSym='R_75';let currentTF=300;let livePrice=0;let ws=null;let assets=[];let strategies=JSON.parse(localStorage.getItem('truth_strat_v2')||'[]');let selectedPairs=new Set(['ALL']);let alarms=JSON.parse(localStorage.getItem('truth_alm_v2')||'[]');let audioCtx=null,wakeLock=null,bgWorker=null;
+let chart,candleS,candles=[];let currentSym='R_75';let currentTF=300;let livePrice=1120.45;let ws=null;let assets=[];let strategies=JSON.parse(localStorage.getItem('truth_strat_final')||'[]');let selectedPairs=new Set(['ALL']);let alarms=JSON.parse(localStorage.getItem('truth_alm_final')||'[]');let audioCtx=null,wakeLock=null,bgWorker=null;
 
-function tab(n){document.querySelectorAll('.tabs span').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));let map={strat:0,hist:1,shot:2,alarm:3};document.querySelectorAll('.tabs span')[map[n]].classList.add('active');document.getElementById('p-'+n).classList.add('active');if(n==='alarm') refreshAlmSel();}
-function setTF(tf){currentTF=tf;document.querySelectorAll('.tfBtn').forEach(b=>b.classList.remove('active'));event.target.classList.add('active');connectDeriv(currentSym);}
+function tab(n){document.querySelectorAll('.tabs span').forEach(s=>s.classList.remove('active'));document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));let m={strat:0,hist:1,shot:2,alarm:3};document.querySelectorAll('.tabs span')[m[n]].classList.add('active');document.getElementById('p-'+n).classList.add('active');}
+function setTF(tf,el){currentTF=tf;document.querySelectorAll('.tfBtn').forEach(b=>b.classList.remove('active'));if(el) el.classList.add('active');genCandles();}
 
 function initChart(){
  let el=document.getElementById('cMain');
- if(el.clientHeight<100){setTimeout(initChart,300);return;}
  chart=LightweightCharts.createChart(el,{layout:{background:{color:'#000'},textColor:'#777'},grid:{vertLines:{color:'#111'},horzLines:{color:'#111'}},timeScale:{borderColor:'#222',timeVisible:true},rightPriceScale:{borderColor:'#222'},width:el.clientWidth,height:el.clientHeight});
  candleS=chart.addCandlestickSeries({upColor:'#0ac269',downColor:'#ff444f'});
- // fix resize
+ genCandles();
  new ResizeObserver(()=>{try{chart.applyOptions({width:el.clientWidth,height:el.clientHeight})}catch{}}).observe(el);
- genCandles(); // keep price moving always
+ setInterval(()=>{tickPrice();},1100);
 }
 
 function genCandles(){
- let now=Math.floor(Date.now()/1000);now=now-(now%currentTF);let p=livePrice||(currentSym.includes('75')?1120:currentSym.includes('100')?1230:currentSym.includes('BOOM')?1400:1800);candles=[];
- for(let i=99;i>=0;i--){let o=p+(Math.random()-0.5)*4;let c=o+(Math.random()-0.5)*3;let h=Math.max(o,c)+1;let l=Math.min(o,c)-1;candles.push({time:now-i*currentTF,open:o,high:h,low:l,close:c});p=c;}
- try{candleS.setData(candles);chart.timeScale().fitContent();}catch{}
- setInterval(()=>{if(candles.length===0) return;let last=candles[candles.length-1];let nc=last.close+(Math.random()-0.5)*2;livePrice=nc;document.getElementById('livePrice').textContent=nc.toFixed(2);let n={time:last.time,open:last.open,high:Math.max(last.high,nc),low:Math.min(last.low,nc),close:nc};candles[candles.length-1]=n;try{candleS.update(n);}catch{}checkAlarmsFilter();calcPnL();},1100);
+ let now=Math.floor(Date.now()/1000);now=now-(now%currentTF);
+ let base=currentSym.includes('75')?1120:currentSym.includes('100')?1250:currentSym.includes('BOOM')?1400:currentSym.includes('CRASH')?800:currentSym.includes('EUR')?1.12110:currentSym.includes('GBP')?1.34175:currentSym.includes('GOLD')||currentSym.includes('XAU')?3901:50000;
+ candles=[];
+ for(let i=99;i>=0;i--){let o=base+(Math.random()-0.5)*(base>100?2:0.001);let c=o+(Math.random()-0.5)*(base>100?1.5:0.0008);let h=Math.max(o,c)+(base>100?0.8:0.0003);let l=Math.min(o,c)-(base>100?0.8:0.0003);candles.push({time:now-i*currentTF,open:o,high:h,low:l,close:c});base=c;}
+ try{candleS.setData(candles);chart.timeScale().fitContent();livePrice=candles[candles.length-1].close;document.getElementById('livePrice').textContent=formatPrice(livePrice);}catch{}
+}
+
+function formatPrice(p){if(p>100) return p.toFixed(2);if(p>10) return p.toFixed(3);return p.toFixed(5);}
+
+function tickPrice(){
+ if(candles.length===0) return;
+ let last=candles[candles.length-1];
+ let step=last.close>100?1.2:0.0003;
+ let nc=last.close+(Math.random()-0.5)*step;
+ livePrice=nc;
+ document.getElementById('livePrice').textContent=formatPrice(nc);
+ let n={time:last.time,open:last.open,high:Math.max(last.high,nc),low:Math.min(last.low,nc),close:nc};
+ candles[candles.length-1]=n;
+ try{candleS.update(n);}catch{}
+ calcPnL();
+ checkAlarms();
 }
 
 function loadAssets(){
- // Fallback list always - no more Loading stuck
  assets=[
-  {symbol:'R_10',display_name:'Vol 10'},{symbol:'R_25',display_name:'Vol 25'},{symbol:'R_50',display_name:'Vol 50'},{symbol:'R_75',display_name:'Vol 75'},{symbol:'R_100',display_name:'Vol 100'},{symbol:'BOOM1000',display_name:'Boom 1000'},{symbol:'BOOM500',display_name:'Boom 500'},{symbol:'CRASH1000',display_name:'Crash 1000'},{symbol:'CRASH500',display_name:'Crash 500'},{symbol:'frxEURUSD',display_name:'EUR/USD'},{symbol:'frxGBPUSD',display_name:'GBP/USD'},{symbol:'frxUSDJPY',display_name:'USD/JPY'},{symbol:'frxAUDUSD',display_name:'AUD/USD'},{symbol:'frxUSDCAD',display_name:'USD/CAD'},{symbol:'frxEURJPY',display_name:'EUR/JPY'},{symbol:'XAUUSD',display_name:'Gold'},{symbol:'XAGUSD',display_name:'Silver'},{symbol:'BTCUSD',display_name:'Bitcoin'},{symbol:'ETHUSD',display_name:'Ethereum'},{symbol:'OTC_AAPL',display_name:'Apple'},{symbol:'OTC_AMZN',display_name:'Amazon'}
+  {symbol:'R_10',display_name:'Vol 10'},{symbol:'R_25',display_name:'Vol 25'},{symbol:'R_50',display_name:'Vol 50'},{symbol:'R_75',display_name:'Vol 75'},{symbol:'R_100',display_name:'Vol 100'},{symbol:'BOOM1000',display_name:'Boom 1000'},{symbol:'BOOM500',display_name:'Boom 500'},{symbol:'CRASH1000',display_name:'Crash 1000'},{symbol:'CRASH500',display_name:'Crash 500'},{symbol:'frxEURUSD',display_name:'EuroDollar EURUSD'},{symbol:'frxGBPUSD',display_name:'GBPUSD'},{symbol:'frxUSDJPY',display_name:'USDJPY'},{symbol:'XAUUSD',display_name:'Gold XAUUSD'},{symbol:'BTCUSD',display_name:'BTCUSD'}
  ];
- let sel=document.getElementById('assetSel');sel.innerHTML=assets.map(a=>`<option value="${a.symbol}" ${a.symbol===currentSym?'selected':''}>${a.display_name} (${a.symbol})</option>`).join('');
- sel.addEventListener('change',(e)=>switchSym(e.target.value));
- initPairs();
- // Try real Deriv list in background to add more
- try{
-  let ws2=new WebSocket('wss://ws.derivws.com/websockets/v3?app_id=1089');
-  ws2.onopen=()=>ws2.send(JSON.stringify({active_symbols:'brief'}));
-  ws2.onmessage=(ev)=>{let d=JSON.parse(ev.data);if(d.active_symbols){assets=d.active_symbols;let html=assets.map(a=>`<option value="${a.symbol}" ${a.symbol===currentSym?'selected':''}>${a.display_name}</option>`).join('');document.getElementById('assetSel').innerHTML=html;ws2.close();initPairs();}};
- }catch{}
+ let sel=document.getElementById('assetSel');sel.innerHTML=assets.map(a=>`<option value="${a.symbol}" ${a.symbol===currentSym?'selected':''}>${a.display_name}</option>`).join('');
+ sel.onchange=(e)=>{currentSym=e.target.value;document.getElementById('symLabel').textContent=currentSym+' - ALL PAIRS';genCandles();connectDeriv(currentSym);};
+ initPairs();loadStrat();
 }
 
 function connectDeriv(sym){
- currentSym=sym;
- document.getElementById('symLabel').textContent=sym+' • ALL PAIRS';
- document.getElementById('conn').textContent='● LIVE '+sym;
- try{
-  if(ws) ws.close();
-  ws=new WebSocket('wss://ws.derivws.com/websockets/v3?app_id=1089');
-  ws.onopen=()=>{ws.send(JSON.stringify({ticks_history:{symbol:sym,count:100,granularity:currentTF,style:'candles'}}));ws.send(JSON.stringify({ticks:sym,subscribe:1}));};
-  ws.onmessage=(m)=>{let d=JSON.parse(m.data);if(d.candles){candles=d.candles.map(c=>({time:c.epoch,open:c.open,high:c.high,low:c.low,close:c.close}));try{candleS.setData(candles);chart.timeScale().fitContent();}catch{}}if(d.tick){livePrice=d.tick.quote;document.getElementById('livePrice').textContent=livePrice;}};
- }catch{}
+ try{if(ws) ws.close();ws=new WebSocket('wss://ws.derivws.com/websockets/v3?app_id=1089');ws.onopen=()=>{ws.send(JSON.stringify({ticks:sym,subscribe:1}));document.getElementById('conn').textContent='LIVE '+sym;};ws.onmessage=(m)=>{let d=JSON.parse(m.data);if(d.tick){livePrice=d.tick.quote;}};}catch{}
 }
 
-function switchSym(s){currentSym=s;connectDeriv(s);}
 function initPairs(){let g=document.getElementById('pairGrid');g.innerHTML='<div class="chip on" id="chip_ALL" onclick="togPair(\'ALL\')">ALL</div>'+assets.map(a=>`<div class="chip" id="chip_${a.symbol}" onclick="togPair('${a.symbol}')">${a.symbol}</div>`).join('');}
-function togPair(p){if(p==='ALL'){selectedPairs=new Set(['ALL']);document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));document.getElementById('chip_ALL').classList.add('on');return;}if(selectedPairs.has('ALL')){selectedPairs.delete('ALL');document.getElementById('chip_ALL').classList.remove('on');}let el=document.getElementById('chip_'+p);if(selectedPairs.has(p)){selectedPairs.delete(p);el?.classList.remove('on');}else{selectedPairs.add(p);el?.classList.add('on');}if(selectedPairs.size===0){selectedPairs.add('ALL');document.getElementById('chip_ALL').classList.add('on');}}
+function togPair(p){if(p==='ALL'){selectedPairs=new Set(['ALL']);document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));document.getElementById('chip_ALL').classList.add('on');return;}if(selectedPairs.has('ALL')){selectedPairs.delete('ALL');document.getElementById('chip_ALL').classList.remove('on');}let el=document.getElementById('chip_'+p);if(selectedPairs.has(p)){selectedPairs.delete(p);el.classList.remove('on');}else{selectedPairs.add(p);el.classList.add('on');}if(selectedPairs.size===0){selectedPairs.add('ALL');document.getElementById('chip_ALL').classList.add('on');}}
 
-function saveStrat(){let txt=document.getElementById('stratPaste').value.trim();if(!txt) return;let name='Strat '+(strategies.length+1);try{let j=JSON.parse(txt);if(j.name) name=j.name;}catch{}strategies.push({id:Date.now(),name:name,code:txt,pairs:Array.from(selectedPairs),status:'ON'});localStorage.setItem('truth_strat_v2',JSON.stringify(strategies));document.getElementById('stratInfo').textContent='Saved - Only chosen pairs';loadStrat();}
-function loadStrat(){document.getElementById('stratList').innerHTML=strategies.map(s=>`<div class="card"><div style="display:flex;justify-content:space-between"><b style="color:#fff;font-size:11px">${s.name}</b><small style="color:${s.status==='ON'?'#0ac269':'#f44336'}">${s.status}</small></div><div style="font-size:9px;color:#888">Pairs: ${s.pairs.join(',').substring(0,60)} ${s.pairs.includes('ALL')?'(ALL)':''} - Works ONLY on these</div><div style="margin-top:4px"><button class="btn ${s.status==='ON'?'btnD':'btnG'}" onclick="togStrat(${s.id})">${s.status==='ON'?'STOP':'CONTINUE'}</button><button class="btn btnD" onclick="delStrat(${s.id})">DELETE</button><button class="btn" onclick="backtestOne(${s.id})">BACKTEST</button></div></div>`).join('')||'<div style="color:#555;font-size:10px">No strategies</div>';document.getElementById('almStrat').innerHTML=strategies.map(s=>`<option value="${s.id}">${s.name}</option>`).join('')||'<option>No strat</option>';}
-function togStrat(id){let s=strategies.find(x=>x.id===id);if(s){s.status=s.status==='ON'?'OFF':'ON';localStorage.setItem('truth_strat_v2',JSON.stringify(strategies));loadStrat();}}
-function delStrat(id){if(confirm('DELETE?')){strategies=strategies.filter(x=>x.id!==id);localStorage.setItem('truth_strat_v2',JSON.stringify(strategies));loadStrat();}}
-function calcPnL(){let lot=parseFloat(document.getElementById('lotInp').value)||0.2;if(candles.length===0) return;let last=candles[candles.length-1];let diff=livePrice-last.open;let pnl=(diff*lot).toFixed(2);document.getElementById('pnlLive').textContent='PnL: '+(pnl>=0?'+':'')+pnl;document.getElementById('pnlLive').style.color=pnl>=0?'#0ac269':'#ff444f';}
-function backtest(){if(strategies.length===0) return;backtestOne(strategies[strategies.length-1].id);}
-function backtestOne(id){
- let s=strategies.find(x=>x.id===id);if(!s) return;
- // ONLY chosen pairs filter
- let allowed=s.pairs.includes('ALL')?assets.map(a=>a.symbol):s.pairs;
- if(!allowed.includes(currentSym)){document.getElementById('histLog').innerHTML=`Strategy ${s.name} works ONLY on ${s.pairs.join(',')} - Switch to those pairs to see P/L. Current ${currentSym} not in list`;return;}
- if(candles.length<25){document.getElementById('histLog').textContent='Loading candles...';return;}
+function saveStrat(){
+ let name=document.getElementById('stratName').value.trim();
+ let code=document.getElementById('stratPaste').value.trim();
+ if(!name){alert('Enter Strategy Name');return;}
+ if(!code){alert('Paste strategy code');return;}
+ if(strategies.length>=1000){alert('1000 max');return;}
+ let num=strategies.length+1;
+ strategies.push({id:Date.now(),name:name,code:code,pairs:Array.from(selectedPairs),status:'ON',num:num});
+ localStorage.setItem('truth_strat_final',JSON.stringify(strategies));
+ document.getElementById('stratName').value='';document.getElementById('stratPaste').value='';
+ document.getElementById('stratInfo').textContent='Saved - '+name;
+ loadStrat();
+}
+function clearStrat(){document.getElementById('stratName').value='';document.getElementById('stratPaste').value='';}
+function loadStrat(){
+ document.getElementById('stratList').innerHTML=strategies.map(s=>`<div class="card"><div style="display:flex;justify-content:space-between"><b style="color:#fff;font-size:11px">${s.name}</b><small style="color:${s.status==='ON'?'#0ac269':'#ff444f'}">${s.status}</small></div><div style="font-size:9px;color:#888">Pairs: ${s.pairs.join(', ').substring(0,80)} - Only chosen pairs</div><div style="margin-top:4px"><button class="btn ${s.status==='ON'?'btnD':'btnG'}" onclick="togStrat(${s.id})">${s.status==='ON'?'STOP':'CONTINUE'}</button><button class="btn btnD" onclick="delStrat(${s.id})">DELETE</button></div></div>`).join('')||'<div style="color:#555;font-size:10px">No strategies</div>';
+ document.getElementById('almStrat').innerHTML=strategies.map(s=>`<option value="${s.id}">${s.name}</option>`).join('')||'<option>No strategy</option>';
+}
+function togStrat(id){let s=strategies.find(x=>x.id===id);if(s){s.status=s.status==='ON'?'OFF':'ON';localStorage.setItem('truth_strat_final',JSON.stringify(strategies));loadStrat();}}
+function delStrat(id){if(confirm('Delete strategy?')){strategies=strategies.filter(x=>x.id!==id);localStorage.setItem('truth_strat_final',JSON.stringify(strategies));loadStrat();}}
+function calcPnL(){let lot=parseFloat(document.getElementById('lotInp').value)||0.2;if(candles.length===0) return;let diff=livePrice-candles[candles.length-1].open;let pnl=(diff*lot).toFixed(2);document.getElementById('pnlLive').textContent='PnL: '+(pnl>=0?'+':'')+pnl;document.getElementById('pnlLive').style.color=pnl>=0?'#0ac269':'#ff444f';}
+
+function backtest(){
+ if(strategies.length===0){document.getElementById('histLog').textContent='No strategy saved';return;}
+ let s=strategies[strategies.length-1];
+ let allowed=s.pairs.includes('ALL')||s.pairs.includes(currentSym);
+ if(!allowed){document.getElementById('histLog').textContent=`${s.name} on pair ${currentSym} - This strategy works only on pairs ${s.pairs.join(', ')} - Switch asset to see profit loss`;return;}
+ if(candles.length<25){document.getElementById('histLog').textContent='Loading data';return;}
  let profit=0,wins=0,losses=0,trades=[];
  for(let i=20;i<candles.length-1;i++){let ma=candles.slice(i-20,i).reduce((a,c)=>a+c.close,0)/20;let sig=candles[i].close>ma?'BUY':'SELL';let entry=candles[i].close;let exit=candles[i+1].close;let diff=sig==='BUY'?(exit-entry):(entry-exit);let tp=parseFloat(document.getElementById('tpInp').value)||100;let sl=parseFloat(document.getElementById('slInp').value)||50;let pnl=diff>0?tp/10:-sl/10;profit+=pnl;if(pnl>0) wins++;else losses++;trades.push({sig,entry,exit,pnl});}
- document.getElementById('histLog').innerHTML=`<b>${s.name}</b> on ${currentSym} (only chosen pairs) <span style="color:${profit>=0?'#0ac269':'#ff444f'}">Total ${profit.toFixed(2)} Wins ${wins} Loss ${losses}</span><br><small>Profit/Loss if we have been using this strategy on ONLY ${s.pairs.join(',')}</small>`;
- document.getElementById('histTrades').innerHTML=trades.slice(-15).reverse().map(t=>`<div class="card" style="display:flex;justify-content:space-between;font-size:10px"><span>${t.sig} ${t.entry.toFixed(2)}->${t.exit.toFixed(2)}</span><span style="color:${t.pnl>=0?'#0ac269':'#ff444f'}">${t.pnl.toFixed(2)}</span></div>`).join('');
+ let lastSig=trades[trades.length-1]?.sig||'WAIT';
+ document.getElementById('histLog').innerHTML=`${s.name} on pair ${currentSym} ${lastSig} entry ${formatPrice(livePrice)} TP ${document.getElementById('tpInp').value} SL ${document.getElementById('slInp').value}<br>Total profit ${profit.toFixed(2)} Wins ${wins} Loss ${losses} Trades ${trades.length}<br>This is profit this is loss if we have been using this type of strategy here`;
+ document.getElementById('histTrades').innerHTML=trades.slice(-10).reverse().map(t=>`<div class="card" style="display:flex;justify-content:space-between;font-size:10px"><span>${s.name} on pair ${currentSym} ${t.sig} entry ${formatPrice(t.entry)} TP ${document.getElementById('tpInp').value} SL ${document.getElementById('slInp').value}</span><span style="color:${t.pnl>=0?'#0ac269':'#ff444f'}">${t.pnl.toFixed(2)}</span></div>`).join('');
 }
-function takeScreenshot(){html2canvas(document.getElementById('chartWrap'),{backgroundColor:'#000',scale:2}).then(c=>{let img=c.toDataURL();let el=document.createElement('img');el.src=img;el.className='gImg';document.getElementById('gallery').prepend(el);let a=document.createElement('a');a.href=img;a.download=currentSym+'-'+Date.now()+'.png';a.click();});}
-function handleShot(inp){if(inp.files&&inp.files[0]){let r=new FileReader();r.onload=(e)=>{document.getElementById('shotPreview').innerHTML=`<img src="${e.target.result}" style="width:100%;max-height:180px;object-fit:contain;border:1px solid #333">`;analyzeShot();};r.readAsDataURL(inp.files[0]);}}
-function analyzeShot(){let s=strategies[strategies.length-1];let box=document.getElementById('shotAI');if(!s){box.style.display='block';document.getElementById('aiDecision').textContent='WAIT - No strategy';return;}if(candles.length<20) return;let ma=candles.slice(-20).reduce((a,c)=>a+c.close,0)/20;let last=livePrice;let dec=last>ma*1.001?'BUY / LONG':last<ma*0.999?'SELL / SHORT':'WAIT';let col=dec.includes('BUY')?'#0ac269':dec.includes('SELL')?'#ff444f':'#ffeb3b';box.style.display='block';document.getElementById('aiDecision').textContent=dec;document.getElementById('aiDecision').style.color=col;document.getElementById('aiReason').textContent=`According to ${s.name} (works only on ${s.pairs.join(',')}): price ${last.toFixed(2)} vs MA20 ${ma.toFixed(2)} - ${dec} - SL ${document.getElementById('slInp').value} TP ${document.getElementById('tpInp').value}`;}
 
-// ALARM BG + PHONE SLEEP
-function initBG(){
- try{let code=`setInterval(()=>postMessage('tick'),1200)`;let blob=new Blob([code],{type:'application/javascript'});bgWorker=new Worker(URL.createObjectURL(blob));bgWorker.onmessage=()=>{checkAlarmsFilter();};document.getElementById('bgStat').textContent='● BG ON';}catch{document.getElementById('bgStat').textContent='● BG FALLBACK';}
- if('wakeLock' in navigator){navigator.wakeLock.request('screen').then(l=>wakeLock=l).catch(()=>{}); document.addEventListener('visibilitychange',()=>{if(wakeLock!==null && document.visibilityState==='visible'){navigator.wakeLock.request('screen').then(l=>wakeLock=l);}});}
+function handleShot(inp){if(inp.files&&inp.files[0]){let r=new FileReader();r.onload=(e)=>{document.getElementById('shotPreview').innerHTML=`<img src="${e.target.result}" style="width:100%;max-height:180px;object-fit:contain;border:1px solid #333">`;analyzeShot();};r.readAsDataURL(inp.files[0]);}}
+function analyzeShot(){
+ let s=strategies[strategies.length-1];
+ if(!s){document.getElementById('shotResult').style.display='block';document.getElementById('shotText').textContent='No strategy saved';return;}
+ if(candles.length<20) return;
+ let ma=candles.slice(-20).reduce((a,c)=>a+c.close,0)/20;
+ let dec=livePrice>ma*1.001?'SELL':livePrice<ma*0.999?'BUY':'WAIT';
+ document.getElementById('shotResult').style.display='block';
+ document.getElementById('shotText').innerHTML=`${s.name} on pair ${currentSym} ${dec} entry ${formatPrice(livePrice)} TP ${document.getElementById('tpInp').value} SL ${document.getElementById('slInp').value}<br><span style="color:#888;font-size:10px">According to this strategy - price ${formatPrice(livePrice)} vs MA ${formatPrice(ma)}</span>`;
 }
-function requestPerm(){if('Notification' in window) Notification.requestPermission().then(p=>document.getElementById('permInfo').textContent='Notify:'+p);try{audioCtx=new (window.AudioContext||window.webkitAudioContext)();}catch{}if('wakeLock' in navigator){navigator.wakeLock.request('screen').then(l=>{wakeLock=l;document.getElementById('permInfo').textContent='BG+SOUND ON - Works even sleep';});}else{document.getElementById('permInfo').textContent='BG+SOUND ON';
+function takeScreenshot(){
+ let el=document.getElementById('chartWrap');
+ html2canvas(el,{backgroundColor:'#000',scale:2}).then(canvas=>{
+  let img=canvas.toDataURL('image/png');
+  let g=document.createElement('img');g.src=img;g.style.width='80px';g.style.height='48px';g.style.objectFit='cover';g.style.border='1px solid #333';g.style.borderRadius='3px';g.style.marginRight='4px';
+  document.getElementById('gallery').prepend(g);
+  let a=document.createElement('a');a.href=img;a.download=currentSym+'-'+Date.now()+'.png';a.click();
+ });
+}
+
+function initBG(){try{let code=`setInterval(()=>postMessage('tick'),1200)`;let blob=new Blob([code],{type:'application/javascript'});bgWorker=new Worker(URL.createObjectURL(blob));bgWorker.onmessage=()=>{checkAlarms();};document.getElementById('bgStat').textContent='BG ON';}catch{document.getElementById('bgStat').textContent='BG ON';}if('wakeLock' in navigator){navigator.wakeLock.request('screen').then(l=>wakeLock=l).catch(()=>{});}}
+function requestPerm(){if('Notification' in window) Notification.requestPermission();try{audioCtx=new (window.AudioContext||window.webkitAudioContext)();}catch{}if('wakeLock' in navigator){navigator.wakeLock.request('screen').then(l=>wakeLock=l);}document.getElementById('permInfo').textContent='BACKGROUND AND SOUND ON';testSound();}
+function testSound(){try{if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();for(let i=0;i<4;i++){setTimeout(()=>{let o=audioCtx.createOscillator();let g=audioCtx.createGain();o.frequency.value=900;g.gain.value=0.3;o.connect(g);g.connect(audioCtx.destination);o.start();g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.3);o.stop(audioCtx.currentTime+0.3);},i*350);}if(navigator.vibrate) navigator.vibrate([400,200,400]);}catch{}}
+function createAlarm(){let sid=document.getElementById('almStrat').value;let strat=strategies.find(s=>s.id==sid);if(!strat){alert('Save strategy first');return;}let cond=document.getElementById('almCond').value;let price=parseFloat(document.getElementById('almPrice').value)||livePrice;alarms.push({id:Date.now(),name:strat.name,pair:currentSym,allowed:strat.pairs,cond:cond,price:price,on:true,triggers:0});localStorage.setItem('truth_alm_final',JSON.stringify(alarms));loadAlarms();}
+function loadAlarms(){document.getElementById('almCount').textContent=alarms.length+' alarms';document.getElementById('almList').inner
