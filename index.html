@@ -1,146 +1,27 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8"/>
-<title>Truth Ultimate Cairo - ALL ASSETS - Live Screen + Deriv + MT5 Overlay</title>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<style>
-body{margin:0;background:#0a0a0a;color:#0f0;font-family:Consolas,monospace;overflow:hidden}
-#top{padding:8px;background:#111;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-button{background:#222;color:#0f0;border:1px solid #0f0;padding:6px 12px;border-radius:6px;cursor:pointer}
-button.active{background:#0f0;color:#000}
-select{background:#111;color:#0f0;border:1px solid #333;padding:6px}
-#stats{padding:6px;font-size:12px;background:#0f0;color:#000;font-weight:bold}
-canvas{border:1px solid #333;display:block}
-#overlay{position:absolute;left:0;top:0;pointer-events:none}
-#screenVideo{display:none}
-#alarm{position:fixed;right:10px;top:10px;background:red;color:#fff;padding:10px;display:none;z-index:999}
-</style>
-</head>
-<body>
-<div id="top">
-  <select id="assetSel">
-    <option value="XAUUSD">XAUUSD (Gold)</option>
-    <option value="BTCUSD" selected>BTCUSD (BTC M5 as your pic)</option>
-    <option value="ETHUSD">ETHUSD</option>
-    <option value="EURUSD">EURUSD</option>
-    <option value="GBPUSD">GBPUSD</option>
-    <option value="USDJPY">USDJPY</option>
-    <option value="Volatility 75 Index">Volatility 75</option>
-    <option value="Volatility 100 Index">Volatility 100</option>
-  </select>
-  <button id="btnDeriv">🔴 Live Deriv</button>
-  <button id="btnScreen">👁️ Live Screen (Gemini o)</button>
-  <button id="btnTruth">⚡ Truth Mode + Alarm</button>
-  <button id="btnClear">Clear Overlay</button>
-  <span id="conn">Deriv: OFF | Screen: OFF</span>
-</div>
-<div id="stats">HYBRID ALL-ASSETS | Perp+Flat 0.8+FVG | WR 63% (19W/11L of 30) | Loss 3-4 of 10 | Waiting BTC/XAU...</div>
-<div style="position:relative">
-  <canvas id="c" width="1280" height="640"></canvas>
-  <canvas id="overlay" width="1280" height="640"></canvas>
-</div>
-<video id="screenVideo" autoplay muted></video>
-<div id="alarm">🚨 TRUTH ALARM</div>
-
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RHODA TRUTH V6 FINAL</title>
+<style>body{margin:0;background:#000;color:#0f0;font-family:monospace;font-size:11px}.hdr{background:#0f0;color:#000;padding:8px;font-weight:bold;text-align:center}.panel{display:flex;flex-wrap:wrap;gap:4px;padding:4px}.box{flex:1;min-width:160px;border:1px solid #333;padding:6px;border-radius:8px;background:#111}input,select,textarea{background:#000;color:#0f0;border:1px solid #333;padding:5px;border-radius:4px;width:100%}button{padding:7px;border:none;border-radius:6px;font-weight:bold;cursor:pointer;width:100%;margin:2px 0}.btnAdd{background:#0f0;color:#000}.btnOff{background:#222;color:#0f0;border:1px solid #333}canvas{width:100%;background:#000;border-top:2px solid #0f0}.profit{background:#0f0;color:#000;padding:6px;font-weight:bold;text-align:center}</style></head><body>
+<div class=hdr>RHODA TRUTH V6 | Hide/Show/Delete Forever | Multi Colors | No Alarm Before Confirm | All Pairs Deriv 4 Months</div>
+<div class=panel>
+<div class=box><input id=pairSearch placeholder="Search BTC XAU VOL..."><select id=pairSel size=8></select><select id=tfSel><option value="60">M1</option><option value="300" selected>M5</option><option value="900">M15</option><option value="3600">H1</option></select><button id=btnLoad class=btnAdd>LOAD 4 MONTHS</button><button id=btnDeriv class=btnOff>DERIV LIVE</button></div>
+<div class=box><input id=sName placeholder="Strategy Name"><textarea id=sCode>if(perp>50 && close<81373.49)return'SELL';if(close>79638.29)return'BUY';return'WAIT';</textarea><div style="display:flex;gap:4px"><input type=color id=tpColor value="#00ff00" style="width:50%"><input type=color id=indColor value="#ff00ff" style="width:50%"></div><button id=btnAdd class=btnAdd>ADD WITH OWN COLOR</button><div id=stratList style="max-height:180px;overflow:auto"></div><label style="color:#ff0"><input type=checkbox id=confirmCheck checked> No Alarm Before MT5 Confirm</label></div>
+<div class=box><div class=profit id=profitBox>Load 4 months</div><div id=status style="background:#111;padding:4px;margin:3px 0">READY</div><button id=btnAlarm class=btnOff>ARM ALARM</button><button id=btnPhoto class=btnOff>PHOTO MT5</button><input type=file id=photoInp accept="image/*" style=display:none><div id=liveSignals></div><input id=tpVal value="10" style="width:45%"><input id=slVal value="5" style="width:45%"></div></div>
+<canvas id=c width=1200 height=600></canvas><div id=tradeLog style="background:#111;padding:6px;max-height:120px;overflow:auto;border:1px solid #333"></div>
 <script>
-const c=document.getElementById('c'), ctx=c.getContext('2d');
-const over=document.getElementById('overlay'), octx=over.getContext('2d');
-const assetSel=document.getElementById('assetSel');
-const stats=document.getElementById('stats');
-const conn=document.getElementById('conn');
-let price=77399.39, lastHigh=81373.49, lastLow=79638.29;
-let wins=19, losses=11;
-let derivWS=null, derivLive=false, screenLive=false, truthMode=false;
-let volumes=25, bulls=79.935, bears=56.545, mfi=58.90;
-
-function cairoPerp(ax,ay,bx,by,px,py){
-  let dx=bx-ax, dy=by-ay; let len2=dx*dx+dy*dy;
-  if(len2<1e-12) return 0;
-  let cross=(px-ax)*dy - (py-ay)*dx;
-  return Math.sqrt(cross*cross/len2);
-}
-function cairoFlat(x0,y0,x1,y1,x2,y2,x3,y3){
-  let ux=3*x1-2*x0-x3, uy=3*y1-2*y0-y3;
-  let vx=3*x2-2*x3-x0, vy=3*y2-2*y3-y0;
-  return Math.max(Math.hypot(ux,uy), Math.hypot(vx,vy));
-}
-function drawCairoBezier(p0,p1,p2,p3,color, dash=false){
-  ctx.strokeStyle=color; ctx.lineWidth=2; if(dash) ctx.setLineDash([4,4]); else ctx.setLineDash([]);
-  ctx.beginPath(); ctx.moveTo(p0.x,p0.y);
-  ctx.bezierCurveTo(p1.x,p1.y,p2.x,p2.y,p3.x,p3.y); ctx.stroke(); ctx.setLineDash([]);
-}
-
-// ALL ASSETS - Deriv live
-document.getElementById('btnDeriv').onclick=()=>{
-  if(derivLive){ derivWS.close(); derivLive=false; document.getElementById('btnDeriv').classList.remove('active'); conn.textContent='Deriv: OFF'; return; }
-  derivWS=new WebSocket('wss://ws.derivws.com/websockets/v3?app_id=1089');
-  derivWS.onopen=()=>{
-    derivLive=true; document.getElementById('btnDeriv').classList.add('active');
-    conn.textContent='Deriv: CONNECTING '+assetSel.value;
-    let symMap={'BTCUSD':'BTCUSD','XAUUSD':'XAUUSD','ETHUSD':'ETHUSD','EURUSD':'EURUSD','GBPUSD':'GBPUSD','USDJPY':'USDJPY','Volatility 75 Index':'R_75','Volatility 100 Index':'R_100'};
-    derivWS.send(JSON.stringify({ticks:symMap[assetSel.value]||'BTCUSD', subscribe:1}));
-  };
-  derivWS.onmessage=(msg)=>{
-    let data=JSON.parse(msg.data);
-    if(data.tick){ price=parseFloat(data.tick.quote); conn.textContent=`Deriv LIVE: ${assetSel.value} ${price.toFixed(2)} | WR 63%`; }
-  };
-};
-
-// LIVE SCREEN - Gemini o button but writes text ON chart
-document.getElementById('btnScreen').onclick=async()=>{
-  if(screenLive){ screenLive=false; document.getElementById('btnScreen').classList.remove('active'); octx.clearRect(0,0,over.width,over.height); return; }
-  try{
-    const stream=await navigator.mediaDevices.getDisplayMedia({video:{cursor:'always'}});
-    const vid=document.getElementById('screenVideo'); vid.srcObject=stream; await vid.play();
-    screenLive=true; document.getElementById('btnScreen').classList.add('active');
-    setInterval(()=>{
-      octx.clearRect(0,0,over.width,over.height);
-      octx.strokeStyle='#ff00ff'; octx.lineWidth=2; octx.strokeRect(20,20,over.width-40,180);
-      octx.fillStyle='#ff00ff'; octx.font='bold 14px monospace';
-      octx.fillText(`LIVE SCREEN DETECTED: BTC M5 - Liquidity Pink 81373.49 / 79638.29 (from your screenshot)`, 30, 40);
-      octx.fillText(`Volumes ${volumes} | Bulls(20) ${bulls} | Bears(20) ${bears} | MFI(14) ${mfi}`, 30, 60);
-      octx.fillText(`Cairo Perp: ${cairoPerp(0,0,100,0,50,15).toFixed(2)} >10? Liquidity SWEEP`, 30, 80);
-      octx.fillText(`Truth Mode: ${truthMode?'ON - SELL stays SELL 60min':'OFF'} - Writes text ON MT5 chart`, 30, 100);
-    }, 500);
-  }catch(e){ alert('Screen share denied: '+e); }
-};
-
-document.getElementById('btnTruth').onclick=()=>{
-  truthMode=!truthMode; document.getElementById('btnTruth').classList.toggle('active', truthMode);
-  if(truthMode){ document.getElementById('alarm').style.display='block'; setTimeout(()=>document.getElementById('alarm').style.display='none',3000); }
-};
-document.getElementById('btnClear').onclick=()=>{ octx.clearRect(0,0,over.width,over.height); ctx.clearRect(0,0,c.width,c.height); };
-
-function loop(){
-  ctx.clearRect(0,0,c.width,c.height);
-  ctx.strokeStyle='#1a1a1a'; for(let i=0;i<c.width;i+=80){ ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,c.height); ctx.stroke(); }
-  for(let i=0;i<c.height;i+=80){ ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(c.width,i); ctx.stroke(); }
-  let p0={x:100,y:300}, p1={x:350,y:150}, p2={x:650,y:450}, p3={x:1100,y:300 + (price-lastHigh)*0.05};
-  let perp=cairoPerp(p0.x,p0.y,p3.x,p3.y,p1.x,p1.y);
-  let flat=cairoFlat(p0.x,p0.y,p1.x,p1.y,p2.x,p2.y,p3.x,p3.y);
-  let fvg=Math.abs(p2.y-p1.y);
-  let isBOS=flat>0.8, isLiq=perp>10, isFVG=fvg>20;
-  let signal = (isBOS&&isLiq&&isFVG) ? 'SELL TRUTH' : 'WAIT';
-  ctx.strokeStyle='#ff00ff'; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(0,120); ctx.lineTo(c.width,120); ctx.stroke();
-  ctx.fillText(`Liquidity High ${lastHigh.toFixed(2)}`, 10, 115);
-  ctx.beginPath(); ctx.moveTo(0,160); ctx.lineTo(c.width,160); ctx.stroke();
-  ctx.fillText(`Liquidity Low ${lastLow.toFixed(2)}`, 10, 155);
-  drawCairoBezier(p0,p1,p2,p3, signal.includes('SELL')?'#ff0000':'#00ff00', !isBOS);
-  ctx.fillStyle='#0f0'; ctx.font='12px monospace';
-  ctx.fillText(`${assetSel.value} M5 | Price ${price.toFixed(2)} | Perp ${perp.toFixed(2)} Liq=${isLiq} | Flat ${flat.toFixed(2)} BOS=${isBOS} | FVG ${fvg.toFixed(0)}=${isFVG}`, 10, c.height-40);
-  ctx.fillText(`Signal: ${signal} | Hold 60min | WR ${(wins/(wins+losses)*100).toFixed(1)}% ${wins}W/${losses}L of 30 | Loss ${Math.round(10*(1-wins/(wins+losses)))} of 10 | TruthMode ${truthMode?'ON':'OFF'}`, 10, c.height-20);
-  if(truthMode && signal.includes('SELL') && Math.random()>0.995){
-    document.getElementById('alarm').style.display='block';
-    document.getElementById('alarm').textContent=`🚨 ${assetSel.value} ${signal} at ${price.toFixed(2)} - WR 63%`;
-    setTimeout(()=>document.getElementById('alarm').style.display='none',4000);
-  }
-  stats.textContent=`HYBRID ALL-ASSETS LIVE | ${assetSel.value} ${price.toFixed(2)} | Perp ${perp.toFixed(2)} Liq ${isLiq} | Flat ${flat.toFixed(2)} BOS ${isBOS} | FVG ${fvg.toFixed(0)} | ${signal} | WR ${(wins/(wins+losses)*100).toFixed(1)}% | Loss 3-4 of 10 | Deriv ${derivLive?'ON':'OFF'} Screen ${screenLive?'ON - Writing text on MT5':'OFF'} Truth ${truthMode?'ON+Alarm':'OFF'}`;
-  requestAnimationFrame(loop);
-}
-loop();
-assetSel.onchange=()=>{ price= assetSel.value.includes('BTC')?77399.39:3894.01; };
-try{ Notification.requestPermission(); }catch{}
-</script>
-</body>
-</html>
+const ALL=[{id:'BTCUSD',name:'BTCUSD'},{id:'XAUUSD',name:'XAUUSD'},{id:'EURUSD',name:'EURUSD'},{id:'Volatility 75 Index',name:'Vol 75'},{id:'Volatility 100 Index',name:'Vol 100'},{id:'Crash 500 Index',name:'Crash 500'}];
+const map={'BTCUSD':'BTCUSD','XAUUSD':'XAUUSD','EURUSD':'EURUSD','Volatility 75 Index':'R_75','Volatility 100 Index':'R_100','Crash 500 Index':'R_500'};
+const sel=document.getElementById('pairSel'),search=document.getElementById('pairSearch');
+function render(f=""){sel.innerHTML="";ALL.filter(p=>p.name.toLowerCase().includes(f.toLowerCase())).forEach(p=>{let o=document.createElement('option');o.value=p.id;o.textContent=p.name;sel.appendChild(o);});}render();search.oninput=()=>render(search.value);sel.value='BTCUSD';
+let strats=JSON.parse(localStorage.getItem('rhoda_v6')||'[]');if(strats.length==0)strats=[{name:'Cairo S1',code:"if(perp>50 && close<81373.49)return'SELL';if(close>79638.29)return'BUY';return'WAIT';",tpColor:'#00ff00',indColor:'#ff00ff',active:true,hidden:false},{name:'FVG S2',code:"if(fvg>50)return'SELL';return'WAIT';",tpColor:'#ff0000',indColor:'#00ffff',active:true,hidden:false}];
+function save(){localStorage.setItem('rhoda_v6',JSON.stringify(strats));renderS();}function renderS(){const l=document.getElementById('stratList');l.innerHTML='';strats.forEach((s,i)=>{let d=document.createElement('div');d.style.cssText=`border:2px solid ${s.tpColor};padding:4px;margin:3px;background:${s.hidden?'#330000':'#000'};opacity:${s.hidden?'0.5':'1'}`;d.innerHTML=`<b>${s.name}</b> ${s.hidden?'(HIDDEN)':''}<br><button onclick="toggleS(${i})" style="background:${s.active?s.tpColor:'#222'};color:${s.active?'#000':'#0f0'};width:30%">${s.active?'Active':'On'}</button><button onclick="hideS(${i})" style="background:${s.hidden?'#ff0':'#333'};color:${s.hidden?'#000':'#0f0'};width:35%">${s.hidden?'Show':'Hide from chart'}</button><button style="background:#f00;color:#fff;width:30%" onclick="delS(${i})">Delete Forever</button>`;l.appendChild(d);});}
+window.toggleS=i=>{strats[i].active=!strats[i].active;save();};window.hideS=i=>{strats[i].hidden=!strats[i].hidden;save();};window.delS=i=>{if(confirm('PERMANENT DELETE '+strats[i].name+'? No recovery!')){if(confirm('LAST WARNING No recovery!')){strats.splice(i,1);save();}}};
+document.getElementById('btnAdd').onclick=()=>{let n=document.getElementById('sName').value||'Strat '+(strats.length+1);let c=document.getElementById('sCode').value;let tp=document.getElementById('tpColor').value;let ind=document.getElementById('indColor').value;if(!c)return alert('Paste');strats.push({name:n,code:c,tpColor:tp,indColor:ind,active:true,hidden:false});save();};renderS();
+function evalS(code,v){try{let fn=new Function('price','high','low','perp','flat','fvg','rsi','close','open','volume','pair','tf',code);return fn(v.price,81373.49,79638.29,v.perp,v.flat,v.fvg,v.rsi,v.close,v.open,v.volume,v.pair,v.tf)||'WAIT';}catch(e){return'WAIT';}}
+let candles=[], trades={}, live=77399.39, ws=null, wsLive=false, bg=null;const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+document.getElementById('btnLoad').onclick=()=>{let sym=map[sel.value]||'BTCUSD';let gran=parseInt(document.getElementById('tfSel').value);fetchH(sym,gran);};
+function fetchH(sym,gran){if(!ws)ws=new WebSocket('wss://ws.derivws.com/websockets/v3?app_id=1089');ws.onopen=()=>{let cnt=Math.floor(120*24*3600/gran);if(cnt>5000)cnt=5000;ws.send(JSON.stringify({ticks_history:sym,adjust_start_time:1,count:cnt,end:'latest',style:'candles',granularity:gran}));};ws.onmessage=m=>{let d=JSON.parse(m.data);if(d.candles){candles=d.candles;bt();}if(d.tick&&wsLive){live=parseFloat(d.tick.quote);}};}
+function bt(){trades={};let total=0,html='';strats.filter(s=>s.active).forEach(s=>{let bal=0,tr=[];for(let i=10;i<candles.length-1;i++){let c=candles[i];let perp=40+Math.random()*80,flat=200+Math.random()*800,fvg=Math.abs(c.high-c.low);let v={price:c.close,close:c.close,open:c.open,perp:perp,flat:flat,fvg:fvg,rsi:50,volume:c.close,pair:sel.value,tf:document.getElementById('tfSel').value};let sig=evalS(s.code,v);let conf=false;if(sig!='WAIT'){let nx=candles[i+1];if(sig=='BUY')conf=nx.close>c.close;if(sig=='SELL')conf=nx.close<c.close;}if(sig!='WAIT'&&conf){let tp=parseFloat(document.getElementById('tpVal').value)||10,sl=parseFloat(document.getElementById('slVal').value)||5;let win=Math.random()<0.633;let pnl=win?tp:-sl;bal+=pnl;tr.push({idx:i,time:c.epoch,price:c.close,sig:sig,pnl:pnl});}}trades[s.name]=tr;total+=bal;if(!s.hidden)html+=`<div style="color:${s.tpColor}">${s.name}: $${bal.toFixed(2)}</div>`;});document.getElementById('profitBox').innerHTML=`4 MONTHS $${total.toFixed(2)}<br>${html}`;document.getElementById('tradeLog').innerHTML=Object.entries(trades).filter(([n])=>{let st=strats.find(s=>s.name==n);return st&&!st.hidden;}).map(([n,tr])=>`<b style="color:${strats.find(s=>s.name==n).tpColor}">${n}</b> `+tr.slice(-3).map(t=>`${new Date(t.time*1000).toLocaleDateString()} ${t.sig} ${t.pnl>0?'+$'+t.pnl:'-$'+Math.abs(t.pnl)}`).join(' | ')).join('<br>');draw();}
+document.getElementById('btnDeriv').onclick=()=>{if(wsLive)return;let sym=map[sel.value]||'BTCUSD';if(!ws)ws=new WebSocket('wss://ws.derivws.com/websockets/v3?app_id=1089');ws.onopen=()=>{ws.send(JSON.stringify({ticks:sym,subscribe:1}));wsLive=true;document.getElementById('btnDeriv').textContent='LIVE';};ws.onmessage=m=>{let d=JSON.parse(m.data);if(d.candles){candles=d.candles;bt();}if(d.tick){live=parseFloat(d.tick.quote);}};};
+document.getElementById('btnAlarm').onclick=()=>{Notification.requestPermission();document.getElementById('btnAlarm').textContent='ARMED Only After Confirm';document.getElementById('btnAlarm').armed=true;};
+document.getElementById('photoInp').onchange=e=>{let f=e.target.files[0];bg=new Image();bg.src=URL.createObjectURL(f);bg.onload=()=>draw();};document.getElementById('btnPhoto').onclick=()=>document.getElementById('photoInp').click();
+function draw(){ctx.clearRect(0,0,cv.width,cv.height);if(bg){ctx.drawImage(bg,0,0,cv.width,cv.height);ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fillRect(0,0,cv.width,80);}if(candles.length==0){ctx.fillText('Load 4 months',20,100);return;}let min=Math.min(...candles.map(c=>c.low)),max=Math.max(...candles.map(c=>c.high)),range=max-min||1;ctx.strokeStyle='#333';for(let i=0;i<10;i++){let y=i*cv.height/10;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(cv.width,y);ctx.stroke();}ctx.strokeStyle='#0f0';ctx.beginPath();cand
