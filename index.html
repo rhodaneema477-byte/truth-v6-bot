@@ -1,82 +1,97 @@
-<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>RHODA TRUTH V6.3 LIVE SCREENING ONLY</title>
-<style>body{margin:0;background:#000;color:#0f0;font-family:monospace;font-size:12px}.hdr{background:#0f0;color:#000;padding:8px;font-weight:bold;text-align:center}.panel{display:flex;flex-wrap:wrap;gap:4px;padding:4px}.box{flex:1;min-width:160px;border:1px solid #444;padding:6px;border-radius:8px;background:#111}input,select,textarea{background:#000;color:#0f0;border:1px solid #555;padding:6px;border-radius:4px;width:100%}button{padding:10px;border:none;border-radius:6px;font-weight:bold;cursor:pointer;width:100%;margin:3px 0;font-size:13px}.btnAdd{background:#0f0;color:#000}.btnLive{background:#ff00ff;color:#fff;font-size:15px;padding:12px}.btnOff{background:#333;color:#0f0;border:1px solid #555}canvas{width:100%;background:#000;border-top:2px solid #0f0}.profit{background:#0f0;color:#000;padding:6px;font-weight:bold;text-align:center}.pairItem{padding:8px;border-bottom:1px solid #333;cursor:pointer}.pairItem.selected{background:#0f0;color:#000}video{width:100%;height:220px;background:#111;border:2px solid #f0f}</style></head><body>
-<div class=hdr>RHODA TRUTH V6.3 | LIVE SCREENING ONLY | No Photo No Recorded Video | Real Camera MT5</div>
-<div class=panel>
-<div class=box><b>1. SELECT PAIR</b><input id=pairSearch placeholder="Search BTC XAU VOL..."><div id=pairList style="height:110px;overflow:auto;border:1px solid #555;background:#000"></div><select id=tfSel><option value="60">M1</option><option value="300" selected>M5</option><option value="900">M15</option><option value="3600">H1</option></select><button id=btnLoad class=btnAdd>📊 LOAD 4 MONTHS</button><button id=btnDeriv class=btnOff>🔴 DERIV LIVE</button></div>
-<div class=box><b>2. LIVE SCREENING MT5</b>
-<button id=btnCamera class=btnLive>🎥 START LIVE SCREENING NOW</button>
-<video id=vid autoplay playsinline muted></video>
-<div id=camStatus style="background:#111;padding:4px;color:#ff0">Camera OFF - Tap START LIVE SCREENING</div>
-<button id=btnStopCam class=btnOff style="display:none">⏹️ STOP SCREENING</button>
-<b>Strategy</b><input id=sName placeholder="Cairo S1"><textarea id=sCode style="height:45px">if(perp>50 && close<81373.49)return'SELL';if(close>79638.29)return'BUY';return'WAIT';</textarea><div style="display:flex;gap:4px"><input type=color id=tpColor value="#00ff00" style="width:50%"><input type=color id=indColor value="#ff00ff" style="width:50%"></div><button id=btnAdd class=btnAdd>ADD WITH OWN COLOR</button><div id=stratList style="max-height:120px;overflow:auto"></div></div>
-<div class=box><div class=profit id=profitBox>Select pair + LOAD</div><div id=status>READY</div><button id=btnAlarm class=btnOff>🔔 ARM ALARM Only After Confirm</button><div id=liveSignals></div><div style="display:flex;gap:4px"><input id=tpVal value="10" style="width:50%"><input id=slVal value="5" style="width:50%"></div></div></div>
-<canvas id=c width=1200 height=600></canvas><div id=tradeLog style="background:#111;padding:6px;max-height:100px;overflow:auto;border:1px solid #333"></div>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RHODA V6.4 LIVE SCREEN - SAME DEVICE MT5</title>
+<style>
+body{margin:0;background:#0a0e1a;color:#fff;font-family:Arial;text-align:center}
+#top{padding:12px;background:#111a2e}
+button{padding:14px 20px;margin:8px;border:none;border-radius:10px;font-weight:bold;font-size:15px}
+#startScreen{background:#7c3aed;color:#fff;width:90%}
+#recBtn{background:#ef4444;color:#fff;width:44%}
+#stopBtn{background:#222;color:#aaa;width:44%}
+#videoBox{width:95%;margin:10px auto;background:#000;border:2px solid #7c3aed;border-radius:12px;position:relative}
+video{width:100%;border-radius:10px}
+canvas{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none}
+#status{padding:10px;color:#22c55e;font-weight:bold}
+</style>
+</head>
+<body>
+<div id="top">
+<h3>RHODA TRUTH V6.4<br>LIVE SCREENING ON SAME SCREEN</h3>
+<p>MT5 Live on THIS phone - No second device</p>
+<button id="startScreen">🖥️ START LIVE SCREENING OF THIS SCREEN</button>
+<div>
+<button id="recBtn">● REC LIVE SCREEN</button>
+<button id="stopBtn">⏹️ STOP ALL</button>
+</div>
+<div id="status">Ready - Tap START</div>
+</div>
+
+<div id="videoBox">
+<video id="liveVideo" autoplay muted playsinline></video>
+<canvas id="overlay"></canvas>
+</div>
+
+<p>Procedure: START → Allow Entire Screen → Open MT5 app → Return here → MT5 LIVE here → REC</p>
+
 <script>
-const ALL=[{id:'BTCUSD',name:'BTCUSD (81373/79638)'},{id:'XAUUSD',name:'XAUUSD GOLD'},{id:'XAGUSD',name:'XAGUSD SILVER'},{id:'ETHUSD',name:'ETHUSD'},{id:'EURUSD',name:'EURUSD'},{id:'Volatility 75 Index',name:'Volatility 75 Index'},{id:'Volatility 100 Index',name:'Volatility 100 Index'}];
-const map={'BTCUSD':'BTCUSD','XAUUSD':'XAUUSD','XAGUSD':'XAGUSD','ETHUSD':'ETHUSD','EURUSD':'EURUSD','Volatility 75 Index':'R_75','Volatility 100 Index':'R_100'};
-let selPair='BTCUSD';const pl=document.getElementById('pairList'),ps=document.getElementById('pairSearch');
-function render(f=""){pl.innerHTML="";ALL.filter(p=>p.name.toLowerCase().includes(f.toLowerCase())).forEach(p=>{let d=document.createElement('div');d.className='pairItem'+(p.id===selPair?' selected':'');d.textContent=p.name;d.onclick=()=>{selPair=p.id;document.getElementById('status').textContent='Selected: '+p.name;render(ps.value);};pl.appendChild(d);});}render();ps.oninput=()=>render(ps.value);
-let strats=JSON.parse(localStorage.getItem('rhoda_v6')||'[]');if(strats.length==0)strats=[{name:'Rhoda Cairo S1',code:"if(perp>50 && close<81373.49)return'SELL';if(close>79638.29)return'BUY';return'WAIT';",tpColor:'#00ff00',indColor:'#ff00ff',active:true,hidden:false},{name:'Rhoda FVG S2',code:"if(fvg>50)return'SELL';return'WAIT';",tpColor:'#ff0000',indColor:'#00ffff',active:true,hidden:false}];
-function save(){localStorage.setItem('rhoda_v6',JSON.stringify(strats));renderS();}function renderS(){const l=document.getElementById('stratList');l.innerHTML='';strats.forEach((s,i)=>{let d=document.createElement('div');d.style.cssText=`border:2px solid ${s.tpColor};padding:4px;margin:3px;background:${s.hidden?'#330000':'#000'}`;d.innerHTML=`<b style="color:${s.tpColor}">${s.name}</b><br><button onclick="toggleS(${i})" style="background:${s.active?s.tpColor:'#222'};color:${s.active?'#000':'#0f0'};width:30%">${s.active?'Active':'On'}</button><button onclick="hideS(${i})" style="background:${s.hidden?'#ff0':'#333'};color:${s.hidden?'#000':'#0f0'};width:35%">${s.hidden?'Show':'Hide'}</button><button style="background:#f00;color:#fff;width:30%" onclick="delS(${i})">Delete</button>`;l.appendChild(d);});}
-window.toggleS=i=>{strats[i].active=!strats[i].active;save();};window.hideS=i=>{strats[i].hidden=!strats[i].hidden;save();};window.delS=i=>{if(confirm('DELETE '+strats[i].name+'?')){if(confirm('LAST WARNING No recovery!')){strats.splice(i,1);save();}}};
-document.getElementById('btnAdd').onclick=()=>{let n=document.getElementById('sName').value||'Strat '+(strats.length+1);let c=document.getElementById('sCode').value;let tp=document.getElementById('tpColor').value;let ind=document.getElementById('indColor').value;if(!c)return alert('Paste');strats.push({name:n,code:c,tpColor:tp,indColor:ind,active:true,hidden:false});save();};renderS();
-function evalS(code,v){try{let fn=new Function('price','high','low','perp','flat','fvg','rsi','close','open','volume','pair','tf',code);return fn(v.price,81373.49,79638.29,v.perp,v.flat,v.fvg,v.rsi,v.close,v.open,v.volume,v.pair,v.tf)||'WAIT';}catch(e){return'WAIT';}}
-let candles=[], trades={}, live=77399.39, ws=null, wsLive=false, bg=null, liveStream=null;
-const cv=document.getElementById('c'), ctx=cv.getContext('2d'), vid=document.getElementById('vid');
-document.getElementById('btnLoad').onclick=()=>{let sym=map[selPair]||'BTCUSD';let gran=parseInt(document.getElementById('tfSel').value);fetchH(sym,gran);};
-function fetchH(sym,gran){if(!ws)ws=new WebSocket('wss://ws.derivws.com/websockets/v3?app_id=1089');ws.onopen=()=>{let cnt=Math.floor(120*24*3600/gran);if(cnt>5000)cnt=5000;ws.send(JSON.stringify({ticks_history:sym,adjust_start_time:1,count:cnt,end:'latest',style:'candles',granularity:gran}));};ws.onmessage=m=>{let d=JSON.parse(m.data);if(d.candles){candles=d.candles;bt();}if(d.tick&&wsLive){live=parseFloat(d.tick.quote);}};}
-function bt(){trades={};let total=0,html='';strats.filter(s=>s.active).forEach(s=>{let bal=0,tr=[];for(let i=10;i<candles.length-1;i++){let c=candles[i];let v={price:c.close,close:c.close,open:c.open,perp:40+Math.random()*80,flat:200+Math.random()*800,fvg:Math.abs(c.high-c.low),rsi:50,volume:c.close,pair:selPair,tf:document.getElementById('tfSel').value};let sig=evalS(s.code,v);let conf=false;if(sig!='WAIT'){let nx=candles[i+1];if(sig=='BUY')conf=nx.close>c.close;if(sig=='SELL')conf=nx.close<c.close;}if(sig!='WAIT'&&conf){let tp=parseFloat(document.getElementById('tpVal').value)||10,sl=parseFloat(document.getElementById('slVal').value)||5;let win=Math.random()<0.633;let pnl=win?tp:-sl;bal+=pnl;tr.push({idx:i,time:c.epoch,price:c.close,sig:sig,pnl:pnl});}}trades[s.name]=tr;total+=bal;if(!s.hidden)html+=`<div style="color:${s.tpColor}">${s.name}: $${bal.toFixed(2)}</div>`;});document.getElementById('profitBox').innerHTML=`4 MONTHS $${total.toFixed(2)}<br>${html}`;draw();}
-document.getElementById('btnDeriv').onclick=()=>{if(wsLive)return;let sym=map[selPair]||'BTCUSD';if(!ws)ws=new WebSocket('wss://ws.derivws.com/websockets/v3?app_id=1089');ws.onopen=()=>{ws.send(JSON.stringify({ticks:sym,subscribe:1}));wsLive=true;document.getElementById('btnDeriv').textContent='🟢 LIVE';};ws.onmessage=m=>{let d=JSON.parse(m.data);if(d.candles){candles=d.candles;bt();}if(d.tick){live=parseFloat(d.tick.quote);document.getElementById('btnDeriv').textContent='🟢 LIVE '+live.toFixed(2);}};};
-document.getElementById('btnCamera').onclick=async()=>{
+let screenStream, mediaRecorder, recordedChunks=[];
+const video = document.getElementById('liveVideo');
+const canvas = document.getElementById('overlay');
+const ctx = canvas.getContext('2d');
+const status = document.getElementById('status');
+
+document.getElementById('startScreen').onclick = async () => {
  try{
-  document.getElementById('camStatus').textContent='Requesting camera permission... Allow!';
-  liveStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}});
-  vid.srcObject=liveStream;vid.style.display='block';
-  document.getElementById('camStatus').textContent='🔴 LIVE SCREENING ACTIVE - Point camera at MT5';
-  document.getElementById('btnCamera').style.display='none';
-  document.getElementById('btnStopCam').style.display='block';
-  document.getElementById('status').textContent='LIVE SCREENING ON - MT5 visible in camera';
-  let tempCanvas=document.createElement('canvas');
-  let interval=setInterval(()=>{
-   if(!liveStream)return clearInterval(interval);
-   if(vid.videoWidth>0){
-    tempCanvas.width=vid.videoWidth;tempCanvas.height=vid.videoHeight;
-    tempCanvas.getContext('2d').drawImage(vid,0,0);
-    bg=new Image();bg.src=tempCanvas.toDataURL('image/jpeg',0.8);
-    bg.onload=()=>draw();
-   }
-  },500);
-  vid._interval=interval;
- }catch(e){
-  document.getElementById('camStatus').textContent='Camera blocked: '+e.message+' - Use Chrome and Allow camera';
-  alert('Camera permission needed: Go to Chrome Settings > Site Settings > Camera > Allow for raw.githack.com');
- }
+  screenStream = await navigator.mediaDevices.getDisplayMedia({video:{displaySurface:"monitor"},audio:false});
+  video.srcObject = screenStream;
+  status.innerHTML = "🔴 LIVE SCREEN ACTIVE - Now open MT5 app, then come back";
+  status.style.color = "#22c55e";
+  // resize canvas
+  video.onloadedmetadata = () => {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    drawOverlay();
+  };
+  screenStream.getVideoTracks()[0].onended = () => { status.innerHTML="Screen sharing ended"; };
+ }catch(e){ alert("Failed: "+e.message+"\nUse Chrome, and Allow screen"); }
 };
-document.getElementById('btnStopCam').onclick=()=>{
- if(liveStream){liveStream.getTracks().forEach(t=>t.stop());liveStream=null;}
- if(vid._interval)clearInterval(vid._interval);
- vid.style.display='none';bg=null;
- document.getElementById('camStatus').textContent='Camera OFF';
- document.getElementById('btnCamera').style.display='block';
- document.getElementById('btnStopCam').style.display='none';
- draw();
-};
-function draw(){
- ctx.clearRect(0,0,cv.width,cv.height);
- if(bg && liveStream){
-  ctx.drawImage(bg,0,0,cv.width,cv.height);
-  ctx.fillStyle='rgba(0,0,0,0.4)';ctx.fillRect(0,0,cv.width,70);
-  ctx.fillStyle='#f0f';ctx.font='bold 14px monospace';ctx.fillText('🔴 LIVE MT5 SCREENING - Camera Feed',10,20);
- }else if(bg){
-  ctx.drawImage(bg,0,0,cv.width,cv.height);ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fillRect(0,0,cv.width,60);
- }
- if(candles.length==0){ctx.fillStyle='#0f0';ctx.fillText('Select pair + LOAD 4 MONTHS then START LIVE SCREENING',20,100);return;}
- let min=Math.min(...candles.map(c=>c.low)),max=Math.max(...candles.map(c=>c.high)),range=max-min||1;
- ctx.strokeStyle='#333';for(let i=0;i<10;i++){let y=i*cv.height/10;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(cv.width,y);ctx.stroke();}
- ctx.strokeStyle='#0f0';ctx.lineWidth=2;ctx.beginPath();candles.forEach((c,i)=>{let x=i/candles.length*cv.width;let y=cv.height-(c.close-min)/range*(cv.height*0.6)-80;if(i==0)ctx.moveTo(x,y);else ctx.lineTo(x,y);});ctx.stroke();ctx.lineWidth=1;
- Object.entries(trades).forEach(([name,tr])=>{let s=strats.find(x=>x.name==name);if(!s||s.hidden)return;tr.forEach(t=>{if(t.idx%Math.floor(candles.length/20)!=0)return;let x=t.idx/candles.length*cv.width;let y=cv.height-(t.price-min)/range*(cv.height*0.6)-80;ctx.fillStyle=s.tpColor;ctx.beginPath();ctx.arc(x,y,5,0,Math.PI*2);ctx.fill();ctx.fillText(`${t.sig} HERE`,x-15,y-8);});});
- let liveDiv=document.getElementById('liveSignals');liveDiv.innerHTML='';strats.filter(s=>s.active&&!s.hidden).forEach(s=>{let v={price:live,close:live,open:live,perp:98,flat:916,fvg:300,rsi:58,volume:live,pair:selPair,tf:document.getElementById('tfSel').value};let sig=evalS(s.code,v);let d=document.createElement('div');d.style.cssText=`background:${s.tpColor}22;border:2px solid ${s.tpColor};color:${s.tpColor};padding:4px;margin:2px;font-weight:bold`;d.textContent=`${s.name}: ${sig} @ ${live.toFixed(2)}`;liveDiv.appendChild(d);});
+
+function drawOverlay(){
+ // Example overlay dots - your strategy
+ ctx.clearRect(0,0,canvas.width,canvas.height);
+ ctx.fillStyle="rgba(34,197,94,0.8)";
+ // Simulate BUY dot - you replace with your logic
+ ctx.beginPath();
+ ctx.arc(canvas.width*0.5, canvas.height*0.5, 15, 0, Math.PI*2);
+ ctx.fill();
+ ctx.fillStyle="#fff"; ctx.font="20px Arial"; ctx.fillText("BUY LIVE SCREEN MT5", 20, 40);
+ requestAnimationFrame(drawOverlay);
 }
-draw();
-</script></body></html>
+
+document.getElementById('recBtn').onclick = () => {
+ if(!screenStream){ alert("Start screen first!"); return; }
+ recordedChunks=[];
+ mediaRecorder = new MediaRecorder(screenStream, {mimeType:'video/webm'});
+ mediaRecorder.ondataavailable = e=>{ if(e.data.size>0) recordedChunks.push(e.data); };
+ mediaRecorder.onstop = ()=>{
+   const blob = new Blob(recordedChunks, {type:'video/webm'});
+   const url = URL.createObjectURL(blob);
+   const a = document.createElement('a'); a.href=url; a.download='RHODA-LIVE-SCREEN-MT5.webm'; a.click();
+   status.innerHTML="✅ Recording saved - LIVE SCREEN MT5 recorded on this screen";
+ };
+ mediaRecorder.start();
+ status.innerHTML="● RECORDING LIVE SCREEN MT5...";
+};
+
+document.getElementById('stopBtn').onclick = () => {
+ if(mediaRecorder && mediaRecorder.state=="recording") mediaRecorder.stop();
+ if(screenStream) screenStream.getTracks().forEach(t=>t.stop());
+ video.srcObject=null;
+ status.innerHTML="Stopped";
+};
+</script>
+</body>
+ </html>
